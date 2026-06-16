@@ -1,11 +1,11 @@
 # TRACES OF US
 
 ### Every connection leaves a trace.
-
-Interactive Installation  
 **Martina Procopio — 2026**
 
 ---
+
+# 🇬🇧 ENGLISH
 
 ## Overview
 
@@ -13,11 +13,11 @@ Interactive Installation
 
 The project imagines a digital system capable of recording, transforming and preserving traces of human presence over time.
 
-Visitors interact with a plasma sphere while a camera positioned above it observes the movement of their hands. Every gesture becomes a trace. Every trace becomes memory. Every memory becomes part of a living network that continuously evolves.
+Visitors interact with a plasma sphere while a camera positioned above it observes the movement of their hands. Every gesture becomes a trace. Every trace becomes memory. Every memory enters a living network that continuously evolves.
 
 The installation does not preserve identities.
 
-**It preserves presence.**
+It preserves presence.
 
 ---
 
@@ -81,9 +81,9 @@ The installation stores only:
 
 ---
 
-# Technical Implementation
+## Technical Implementation
 
-## Hand Tracking
+### Hand Tracking
 
 The system uses:
 
@@ -98,7 +98,7 @@ No images are recorded or stored.
 
 ---
 
-## Generative Environment
+### Generative Environment
 
 The visual environment is built using:
 
@@ -125,7 +125,7 @@ The visual language takes inspiration from:
 
 ---
 
-## Trace Generation
+### Trace Generation
 
 Hand movement influences the development of the network:
 
@@ -143,7 +143,7 @@ A new movement generates a new trace.
 
 ---
 
-## Visual System
+### Visual System
 
 The visualisation is rendered using:
 
@@ -183,10 +183,11 @@ The audio is intentionally subtle and immersive, functioning as a living backgro
 
 The system uses:
 
-- Tone.Oscillator
-- Tone.NoiseSynth
-- Tone.Filter
-- Tone.Reverb
+- **Tone.Oscillator** for continuous drone layers
+- **Tone.NoiseSynth** for plasma-like noise textures
+- **Tone.Filter** for spectral shaping
+- **Tone.Reverb** for spatial diffusion
+- procedural modulation driven by network activity
 
 Visual parameters are continuously mapped to audio parameters:
 
@@ -197,24 +198,6 @@ Visual parameters are continuously mapped to audio parameters:
 | Connection growth | Reverb depth |
 | System agitation | Filter frequency |
 | Emergent connections | Resonant pulses |
-
----
-
-## Installation Setup
-
-The installation consists of:
-
-- Large projection screen
-- Plasma sphere (Ø 20 cm)
-- Smartphone camera mounted above the sphere
-- Real-time generative visualisation
-- Spatial audio system
-
-The plasma sphere functions as a visible representation of an invisible field.
-
-The camera does not observe the visitor's identity.
-
-It observes movement.
 
 ---
 
@@ -234,7 +217,7 @@ It observes movement.
 
 ---
 
-# 🇮🇹 Italiano
+# 🇮🇹 ITALIANO
 
 ## Descrizione
 
@@ -246,7 +229,7 @@ I visitatori interagiscono con una sfera al plasma mentre una videocamera posizi
 
 L'installazione non conserva identità.
 
-**Conserva presenze.**
+Conserva presenze.
 
 ---
 
@@ -268,14 +251,177 @@ I visitatori successivi non incontrano direttamente le persone che li hanno prec
 
 ---
 
+## Interazione
+
+La sfera al plasma rappresenta l'interfaccia fisica del sistema.
+
+Una videocamera installata sopra la sfera osserva continuamente il movimento delle mani dei visitatori.
+
+Il sistema analizza:
+
+- movimento
+- immobilità
+- durata della presenza
+- ripetizione dei gesti
+- traiettorie nello spazio
+
+Questi comportamenti vengono tradotti in tracce all'interno di un ambiente generativo tridimensionale.
+
+Quando il movimento termina, la traccia viene archiviata e diventa parte della memoria del sistema.
+
+Nel tempo le tracce archiviate generano nodi e connessioni, costruendo una rete di relazioni invisibili.
+
+---
+
+## Cosa viene registrato
+
+L'installazione **non registra**:
+
+- fotografie
+- video
+- volti
+- identità
+- dati personali
+
+L'installazione registra esclusivamente:
+
+- traiettorie di movimento
+- durata della presenza
+- pause
+- ritorni
+- pattern comportamentali
+
+---
+
+## Implementazione Tecnica
+
+### Tracciamento delle Mani
+
+Il sistema utilizza:
+
+- TensorFlow.js
+- MediaPipe Hands
+
+per il rilevamento in tempo reale delle mani attraverso una videocamera.
+
+Vengono elaborati esclusivamente i landmark della mano.
+
+Nessuna immagine viene salvata.
+
+---
+
+### Ambiente Generativo
+
+La visualizzazione è sviluppata utilizzando:
+
+- Three.js
+- WebGL
+- Shader GLSL
+
+La rete è composta da:
+
+- particelle
+- tracce
+- nodi
+- filamenti
+- connessioni procedurali
+
+Ogni traccia archiviata contribuisce alla crescita e alla trasformazione della struttura.
+
+L'estetica prende ispirazione da:
+
+- reti miceliali
+- scariche al plasma
+- reti neurali
+- mappe astronomiche
+
+---
+
+### Generazione delle Tracce
+
+Il movimento della mano influenza direttamente la crescita della rete:
+
+| Comportamento | Risultato |
+|--------------|-----------|
+| Movimento orizzontale | Crescita asse X |
+| Movimento verticale | Crescita asse Y |
+| Permanenza | Crescita asse Z |
+| Ripetizione | Generazione nodi |
+| Somiglianza con altre tracce | Generazione connessioni |
+
+Quando il movimento si interrompe per alcuni secondi, la traccia viene archiviata e diventa parte della memoria del sistema.
+
+Un nuovo movimento genera una nuova traccia.
+
+---
+
+### Sistema Visivo
+
+La rete viene renderizzata attraverso:
+
+- sistemi particellari additivi
+- geometrie procedurali
+- rumore procedurale
+- shader GLSL personalizzati
+- effetti di glow dinamico
+
+Le tracce archiviate si opacizzano progressivamente mentre le connessioni emergenti diventano sempre più evidenti.
+
+La struttura risultante assomiglia a un ecosistema digitale in continua trasformazione.
+
+---
+
+## Sistema Sonoro
+
+L'ambiente sonoro viene generato in tempo reale attraverso **Tone.js**.
+
+Più che una composizione musicale, il sistema costruisce un paesaggio sonoro atmosferico ispirato ai campi elettrici, alle scariche del plasma e alle reti biologiche invisibili.
+
+Il motore audio combina:
+
+- oscillatori sinusoidali a bassa frequenza
+- rumore elettrico filtrato
+- riverbero dinamico
+- modulazioni procedurali
+- impulsi risonanti generati dall'attività della rete
+
+Il suono agisce come un'estensione acustica della visualizzazione.
+
+Con l'aumentare delle tracce e delle connessioni, il paesaggio sonoro modifica continuamente densità, profondità e risonanza.
+
+L'audio è progettato per rimanere discreto e immersivo, come una presenza costante all'interno dello spazio.
+
+### Architettura Audio
+
+Il sistema utilizza:
+
+- **Tone.Oscillator** per i droni continui
+- **Tone.NoiseSynth** per le texture sonore simili al plasma
+- **Tone.Filter** per modellare lo spettro sonoro
+- **Tone.Reverb** per creare profondità spaziale
+- modulazioni procedurali guidate dallo stato della rete
+
+I parametri visivi vengono tradotti continuamente in parametri sonori:
+
+| Parametro visivo | Risposta sonora |
+|------------------|------------------|
+| Densità delle tracce | Intensità dei droni |
+| Attività della rete | Ampiezza del rumore |
+| Crescita delle connessioni | Quantità di riverbero |
+| Agitazione del sistema | Frequenza del filtro |
+| Nuove connessioni | Impulsi risonanti |
+
+---
+
 ## Esperienza
 
 1. Una persona entra nello spazio.
 2. La sfera al plasma rende visibile un campo invisibile.
 3. Il movimento genera una traccia.
-4. La traccia viene archiviata.
-5. Il sistema genera nuove connessioni.
-6. La rete continua a evolversi.
+4. La traccia viene archiviata quando il movimento termina.
+5. Il sistema confronta la traccia con quelle precedenti.
+6. Emergono nuove connessioni.
+7. La rete continua a evolversi.
 
 > Ogni visitatore non incontra direttamente gli altri.
 >
@@ -285,10 +431,10 @@ I visitatori successivi non incontrano direttamente le persone che li hanno prec
 
 # License
 
-© Martina Procopio, 2026
+**© Martina Procopio, 2026**
 
 All rights reserved.
 
 The concept, visual design, software, source code, documentation and generated outputs of *Traces of Us* are protected by copyright law.
 
-Unauthorized reproduction, distribution, modification or commercial use is prohibited without explicit written permission from the author.
+Unauthorized reproduction, distribution, modification or commercial use is prohibited without explicit permission from the author.
