@@ -1,0 +1,2836 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TRACES OF US</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet" />
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #000;
+        color: #f4f4f0;
+        font-family: "Space Grotesk", sans-serif;
+      }
+
+      canvas {
+        display: block;
+      }
+
+      #ui {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      .hud {
+        position: absolute;
+        left: 16px;
+        top: 14px;
+        max-width: min(420px, calc(100vw - 32px));
+        text-transform: uppercase;
+        letter-spacing: 0.28em;
+        font-size: 11px;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.82);
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+      }
+
+      .hud .title {
+        font-size: 12px;
+        letter-spacing: 0.22em;
+        color: rgba(255, 255, 255, 0.96);
+        margin-bottom: 6px;
+      }
+
+      .hud .meta {
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      .corner {
+        position: absolute;
+        right: 16px;
+        bottom: 14px;
+        text-align: right;
+        max-width: min(400px, calc(100vw - 32px));
+        text-transform: uppercase;
+        letter-spacing: 0.28em;
+        font-size: 10px;
+        line-height: 1.55;
+        color: rgba(255, 255, 255, 0.74);
+      }
+
+      .corner strong {
+        color: rgba(255, 255, 255, 0.94);
+        font-weight: 600;
+      }
+
+      #startHint {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        padding: 12px 16px;
+        border: 1px solid rgba(255, 255, 255, 0.24);
+        background: rgba(0, 0, 0, 0.34);
+        color: rgba(255, 255, 255, 0.88);
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        font-size: 11px;
+        backdrop-filter: blur(6px);
+      }
+
+      #drawTraceButton {
+        position: absolute;
+        right: 16px;
+        top: 14px;
+        padding: 11px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        background: rgba(0, 0, 0, 0.34);
+        color: rgba(255, 255, 255, 0.88);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        font-family: inherit;
+        font-size: 10px;
+        cursor: pointer;
+        pointer-events: auto;
+        backdrop-filter: blur(6px);
+      }
+
+      #drawTraceButton:hover,
+      #drawTraceButton.is-active {
+        color: rgba(255, 255, 255, 1);
+        border-color: rgba(255, 255, 255, 0.52);
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      #stats {
+        position: absolute;
+        left: 16px;
+        bottom: 14px;
+        font-size: 10px;
+        line-height: 1.5;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      #handOverlayCanvas {
+        position: absolute;
+        left: 16px;
+        bottom: 44px;
+        width: 220px;
+        height: 165px;
+        display: none;
+        pointer-events: none;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(0, 0, 0, 0.42);
+        backdrop-filter: blur(4px);
+        opacity: 0.9;
+        mix-blend-mode: screen;
+      }
+
+      .gui-wrap {
+        position: absolute;
+        right: 12px;
+        top: 58px;
+        pointer-events: auto;
+        opacity: 0.84;
+      }
+
+      .glitch {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+          to bottom,
+          rgba(255, 255, 255, 0.012),
+          rgba(255, 255, 255, 0.012) 1px,
+          transparent 1px,
+          transparent 3px
+        );
+        mix-blend-mode: screen;
+        opacity: 0.16;
+      }
+
+
+      #ui {
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 1.2s ease, visibility 1.2s ease;
+      }
+
+      body.intro-done #ui {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      #introOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: #000;
+        display: grid;
+        place-items: center;
+        pointer-events: auto;
+        animation: introOverlayFade 1.6s ease 11.2s forwards;
+      }
+
+      .intro-logo,
+      .intro-line {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        opacity: 0;
+        will-change: opacity, transform, filter;
+      }
+
+      .intro-logo {
+        width: min(76vw, 920px);
+        height: auto;
+        animation: introLogo 4.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      }
+
+      .intro-line {
+        width: min(78vw, 980px);
+        text-align: center;
+        color: rgba(255, 255, 255, 0.94);
+        font-size: clamp(28px, 4.7vw, 78px);
+        line-height: 1.08;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+        text-transform: uppercase;
+      }
+
+      .intro-line.first {
+        animation: introPhrase 3.9s cubic-bezier(0.22, 1, 0.36, 1) 4.05s forwards;
+      }
+
+      .intro-line.second {
+        animation: introPhrase 4.15s cubic-bezier(0.22, 1, 0.36, 1) 7.6s forwards;
+      }
+
+      @keyframes introLogo {
+        0% { opacity: 0; transform: translate(-50%, -50%) scale(0.985); filter: blur(7px); }
+        18% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
+        68% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
+        100% { opacity: 0; transform: translate(-50%, -50%) scale(1.018); filter: blur(8px); }
+      }
+
+      @keyframes introPhrase {
+        0% { opacity: 0; transform: translate(-50%, -50%) translateY(12px); filter: blur(8px); }
+        20% { opacity: 1; transform: translate(-50%, -50%) translateY(0); filter: blur(0); }
+        72% { opacity: 1; transform: translate(-50%, -50%) translateY(0); filter: blur(0); }
+        100% { opacity: 0; transform: translate(-50%, -50%) translateY(-10px); filter: blur(8px); }
+      }
+
+      @keyframes introOverlayFade {
+        from { opacity: 1; }
+        to { opacity: 0; pointer-events: none; }
+      }
+
+      .hud {
+        max-width: min(240px, calc(100vw - 32px));
+      }
+
+      .hud .app-logo {
+        display: block;
+        width: 100px;
+        max-width: 35vw;
+        height: auto;
+        opacity: 0.92;
+        filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.08));
+      }
+
+      .hud .title,
+      .hud .meta,
+      .hud .description,
+      .corner {
+        display: none;
+      }
+
+      #startHint {
+        top: 50%;
+        bottom: auto;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border: 0;
+        background: transparent;
+        padding: 0;
+        letter-spacing: 0.16em;
+        font-size: clamp(18px, 2.1vw, 34px);
+        font-weight: 300;
+        text-align: center;
+        color: rgba(255, 255, 255, 0.62);
+        backdrop-filter: none;
+        opacity: 0;
+        transition: opacity 0.9s ease;
+      }
+
+      #startHint.is-visible {
+        opacity: 1;
+      }
+
+
+
+      #fullscreenButton {
+        position: fixed;
+        right: 16px;
+        top: 14px;
+        z-index: 20;
+        pointer-events: auto;
+        padding: 8px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.24);
+        background: rgba(0, 0, 0, 0.28);
+        color: rgba(255, 255, 255, 0.72);
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 10px;
+        font-weight: 300;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.35s ease, border-color 0.35s ease, color 0.35s ease;
+      }
+
+      body:hover #fullscreenButton {
+        opacity: 0.75;
+      }
+
+      #fullscreenButton:hover {
+        opacity: 1;
+        color: rgba(255, 255, 255, 0.95);
+        border-color: rgba(255, 255, 255, 0.48);
+      }
+
+      #stats,
+      .gui-wrap,
+      #handOverlayCanvas,
+      .corner {
+        display: none !important;
+      }
+
+      /* Landing rimossa: l'installazione parte subito, con logo fisso invariato. */
+      #introOverlay { display: none !important; opacity: 0 !important; pointer-events: none !important; }
+      #ui { opacity: 1 !important; visibility: visible !important; }
+
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="ui">
+      <div class="hud">
+        <img class="app-logo" src="./assets/traces-logo.png" alt="TRACES OF US" />
+        <div class="title">Traces of Us</div>
+        <div class="description">Una rete latente registra presenze invisibili.</div>
+        <div class="meta">La mano disegna una traccia; la permanenza diventa profondità.</div>
+      </div>
+      <div id="startHint">nessuna traccia rilevata</div>
+      <canvas id="handOverlayCanvas" width="320" height="240"></canvas>
+      <div id="stats"></div>
+      <div class="glitch"></div>
+      <div class="gui-wrap" id="gui-wrap"></div>
+      <button id="fullscreenButton" type="button" aria-label="Attiva fullscreen">fullscreen</button>
+    </div>
+
+    <video id="webcam" autoplay playsinline muted style="display: none"></video>
+    <canvas id="canvas" width="640" height="480" style="display: none"></canvas>
+    <canvas id="nightVisionCanvas" width="640" height="480" style="display: none"></canvas>
+    <canvas id="handNightVisionCanvas" width="320" height="240" style="display: none"></canvas>
+    <div id="status" style="display: none"></div>
+    <button id="startBtn" style="display: none" disabled>start</button>
+    <ul id="faceList" style="display: none"></ul>
+    <ul id="handList" style="display: none"></ul>
+    <input id="toggleNumbers" type="checkbox" style="display: none" />
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-cpu"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection"></script>
+    <script src="./ml-face-tracking.js"></script>
+    <script src="./ml-hand-tracking.js"></script>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js";
+      import GUI from "https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm";
+      import * as Tone from "https://cdn.jsdelivr.net/npm/tone@14.8.49/+esm";
+
+      const settings = {
+        nodeCount: 230,
+        connectionLimit: 7,
+        connectionDistance: 190,
+        bundleCount: 1,
+        pulseRate: 0.74,
+        glowBoost: 1.55,
+        networkOpen: 0.82,
+        drift: 0.7,
+        filamentNoise: 1.24,
+        terrainDensity: 2600,
+        terrainAmplitude: 7,
+        particleCount: 5200,
+        memoryBias: 0.82,
+        audioDepth: 0.62,
+        autoOrbit: 0.7,
+      };
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x000000);
+      scene.fog = new THREE.Fog(0x000000, 900, 5200);
+
+      const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 6000);
+      camera.position.set(0, 92, 360);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.setClearColor(0x000000, 1);
+      renderer.domElement.style.touchAction = "none";
+      document.body.appendChild(renderer.domElement);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.045;
+      controls.enablePan = true;
+      controls.enableZoom = true;
+      controls.enableRotate = true;
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = settings.autoOrbit;
+      controls.minDistance = 70;
+      controls.maxDistance = 1800;
+      controls.target.set(0, 0, 0);
+
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+      const presencePoint = new THREE.Vector3();
+      const smoothedPresence = new THREE.Vector3();
+      const presencePlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+      const clock = new THREE.Clock();
+      const uiStats = document.getElementById("stats");
+      const startHint = document.getElementById("startHint");
+      const drawTraceButton = document.getElementById("drawTraceButton");
+      const webcamVideo = document.getElementById("webcam");
+      const fullscreenButton = document.getElementById("fullscreenButton");
+      const nightVisionCanvas = document.getElementById("nightVisionCanvas");
+      const handNightVisionCanvas = document.getElementById("handNightVisionCanvas");
+      const handOverlayCanvas = document.getElementById("handOverlayCanvas");
+      const handOverlayCtx = handOverlayCanvas ? handOverlayCanvas.getContext("2d") : null;
+      const handTraceCanvas = document.createElement("canvas");
+      handTraceCanvas.width = 320;
+      handTraceCanvas.height = 240;
+      const handTraceCtx = handTraceCanvas.getContext("2d", { willReadFrequently: true });
+      const handOverlayConnections = [
+        [0, 1], [1, 2], [2, 3], [3, 4],
+        [0, 5], [5, 6], [6, 7], [7, 8],
+        [0, 9], [9, 10], [10, 11], [11, 12],
+        [0, 13], [13, 14], [14, 15], [15, 16],
+        [0, 17], [17, 18], [18, 19], [19, 20],
+        [5, 9], [9, 13], [13, 17]
+      ];
+
+      const webcamTracking = {
+        active: false,
+        stream: null,
+        handDetector: null,
+        faceDetector: null,
+        handReady: false,
+        faceReady: false,
+        lastEnsureAt: 0,
+        lastX: 0.5,
+        lastY: 0.5,
+        lastInferenceAt: 0,
+        lastSeenAt: 0,
+        source: "none",
+        hands: 0,
+        faces: 0,
+        initState: "idle",
+        lastError: "",
+        motionFallback: null,
+        motionHits: 0,
+      };
+      let allowMouseFallback = false;
+
+      class NightVisionShaderProcessor {
+        constructor(canvas) {
+          this.canvas = canvas || document.createElement("canvas");
+          this.gl = this.canvas.getContext("webgl", { premultipliedAlpha: false, preserveDrawingBuffer: false });
+          this.ready = false;
+          this.texture = null;
+          this.positionBuffer = null;
+          this.texCoordBuffer = null;
+          this.program = null;
+          this.uniforms = {};
+          if (this.gl) {
+            this.init();
+          }
+        }
+
+        compileShader(type, source) {
+          const gl = this.gl;
+          const shader = gl.createShader(type);
+          gl.shaderSource(shader, source);
+          gl.compileShader(shader);
+          if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            console.warn("Night vision shader compile error", gl.getShaderInfoLog(shader));
+            gl.deleteShader(shader);
+            return null;
+          }
+          return shader;
+        }
+
+        init() {
+          const gl = this.gl;
+          const vertexSource = `
+            attribute vec2 a_position;
+            attribute vec2 a_texCoord;
+            varying vec2 v_texCoord;
+            void main() {
+              v_texCoord = a_texCoord;
+              gl_Position = vec4(a_position, 0.0, 1.0);
+            }
+          `;
+          const fragmentSource = `
+            precision mediump float;
+            uniform sampler2D u_video;
+            uniform vec2 u_resolution;
+            uniform float u_time;
+            varying vec2 v_texCoord;
+
+            float random(vec2 st) {
+              return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+            }
+
+            void main() {
+              vec2 uv = v_texCoord;
+              vec2 centered = uv - 0.5;
+              float dist = length(centered);
+              vec3 color = texture2D(u_video, uv).rgb;
+              float gray = dot(color, vec3(0.299, 0.587, 0.114));
+
+              float contrast = smoothstep(0.10, 0.82, gray);
+              float grain = random(uv * u_resolution + u_time * 19.0) * 0.045;
+              float scan = sin((uv.y * u_resolution.y) * 1.55 + u_time * 3.0) * 0.018;
+              float vignette = smoothstep(0.88, 0.28, dist);
+              float bloom = pow(max(contrast, 0.0), 2.35) * 0.42;
+              float night = clamp(contrast * 1.18 + bloom + grain + scan, 0.0, 1.0) * vignette;
+
+              gl_FragColor = vec4(vec3(night), 1.0);
+            }
+          `;
+          const vs = this.compileShader(gl.VERTEX_SHADER, vertexSource);
+          const fs = this.compileShader(gl.FRAGMENT_SHADER, fragmentSource);
+          if (!vs || !fs) return;
+
+          const program = gl.createProgram();
+          gl.attachShader(program, vs);
+          gl.attachShader(program, fs);
+          gl.linkProgram(program);
+          if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.warn("Night vision shader link error", gl.getProgramInfoLog(program));
+            return;
+          }
+
+          this.program = program;
+          this.uniforms.video = gl.getUniformLocation(program, "u_video");
+          this.uniforms.resolution = gl.getUniformLocation(program, "u_resolution");
+          this.uniforms.time = gl.getUniformLocation(program, "u_time");
+
+          this.positionBuffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+          gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+
+          this.texCoordBuffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+          gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0]), gl.STATIC_DRAW);
+
+          this.texture = gl.createTexture();
+          gl.bindTexture(gl.TEXTURE_2D, this.texture);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          this.ready = true;
+        }
+
+        render(video) {
+          const width = video && (video.videoWidth || video.width || video.naturalWidth || 0);
+          const height = video && (video.videoHeight || video.height || video.naturalHeight || 0);
+          if (!this.ready || !video || !width || !height) {
+            return video;
+          }
+          if (this.canvas.width !== width || this.canvas.height !== height) {
+            this.canvas.width = width;
+            this.canvas.height = height;
+            this.gl.viewport(0, 0, width, height);
+          }
+
+          const gl = this.gl;
+          gl.useProgram(this.program);
+          gl.activeTexture(gl.TEXTURE0);
+          gl.bindTexture(gl.TEXTURE_2D, this.texture);
+          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+          gl.uniform1i(this.uniforms.video, 0);
+          gl.uniform2f(this.uniforms.resolution, width, height);
+          gl.uniform1f(this.uniforms.time, performance.now() * 0.001);
+
+          const positionLocation = gl.getAttribLocation(this.program, "a_position");
+          gl.bindBuffer(gl.ARRAY_BUFFER, this.positionBuffer);
+          gl.enableVertexAttribArray(positionLocation);
+          gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+          const texCoordLocation = gl.getAttribLocation(this.program, "a_texCoord");
+          gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+          gl.enableVertexAttribArray(texCoordLocation);
+          gl.vertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, 0);
+
+          gl.drawArrays(gl.TRIANGLES, 0, 6);
+          return this.canvas;
+        }
+      }
+
+
+      class MotionHandFallback {
+        constructor() {
+          this.width = 160;
+          this.height = 90;
+          this.canvas = document.createElement("canvas");
+          this.canvas.width = this.width;
+          this.canvas.height = this.height;
+          this.ctx = this.canvas.getContext("2d", { willReadFrequently: true });
+          this.previous = null;
+          this.smoothX = 0.5;
+          this.smoothY = 0.5;
+          this.lastSeenAt = 0;
+          this.hold = 0;
+        }
+
+        detect(video, now) {
+          if (!video || video.readyState < 2 || !this.ctx) return null;
+          try {
+            this.ctx.drawImage(video, 0, 0, this.width, this.height);
+            const frame = this.ctx.getImageData(0, 0, this.width, this.height);
+            const data = frame.data;
+            const total = this.width * this.height;
+            if (!this.previous || this.previous.length !== total) {
+              this.previous = new Uint8Array(total);
+              for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+                this.previous[j] = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114) | 0;
+              }
+              return null;
+            }
+
+            let active = 0;
+            let brightRejected = 0;
+            let sumX = 0;
+            let sumY = 0;
+            let weighted = 0;
+            let maxDiff = 0;
+            let minX = this.width;
+            let minY = this.height;
+            let maxX = 0;
+            let maxY = 0;
+            const edgeMargin = 4;
+
+            for (let y = edgeMargin; y < this.height - edgeMargin; y += 1) {
+              for (let x = edgeMargin; x < this.width - edgeMargin; x += 1) {
+                const j = y * this.width + x;
+                const i = j * 4;
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+                const luma = (r * 0.299 + g * 0.587 + b * 0.114) | 0;
+                const prev = this.previous[j];
+                const diff = Math.abs(luma - prev);
+                const maxChannel = Math.max(r, g, b);
+                const minChannel = Math.min(r, g, b);
+                const saturation = maxChannel - minChannel;
+
+                // Update background gradually: enough to forget flicker, slow enough to keep hand motion.
+                this.previous[j] = (prev * 0.78 + luma * 0.22) | 0;
+
+                // Reject the plasma sphere core and electric flicker: very bright or very saturated light.
+                if (luma > 205 || (luma > 155 && saturation > 75)) {
+                  if (diff > 18) brightRejected++;
+                  continue;
+                }
+
+                // Accept broader medium/dark changes: the hand silhouette and fingers.
+                if (diff > 16 && luma > 12 && luma < 188) {
+                  const darknessWeight = 1 - Math.max(0, luma - 145) / 70;
+                  const weight = Math.min(70, diff - 14) * Math.max(0.15, darknessWeight);
+                  active++;
+                  weighted += weight;
+                  sumX += x * weight;
+                  sumY += y * weight;
+                  if (diff > maxDiff) maxDiff = diff;
+                  minX = Math.min(minX, x);
+                  minY = Math.min(minY, y);
+                  maxX = Math.max(maxX, x);
+                  maxY = Math.max(maxY, y);
+                }
+              }
+            }
+
+            const boxW = Math.max(0, maxX - minX);
+            const boxH = Math.max(0, maxY - minY);
+            const boxArea = boxW * boxH;
+            const coherent = active >= 28 && weighted >= 520 && maxDiff >= 24 && boxArea >= 160 && boxArea <= total * 0.55;
+            const notOnlyPlasma = active > brightRejected * 0.28;
+
+            if (!coherent || !notOnlyPlasma) {
+              this.hold = Math.max(0, this.hold - 0.08);
+              if (this.hold <= 0) return null;
+            } else {
+              const rawX = sumX / Math.max(1, weighted) / this.width;
+              const rawY = sumY / Math.max(1, weighted) / this.height;
+              const nx = clamp01(1 - rawX);
+              const ny = clamp01(rawY);
+              this.smoothX += (nx - this.smoothX) * 0.38;
+              this.smoothY += (ny - this.smoothY) * 0.38;
+              this.hold = Math.min(1, this.hold + 0.18);
+              this.lastSeenAt = now;
+            }
+
+            if (this.hold < 0.18) return null;
+            const strength = clamp01((active - 18) / 300 + weighted / 11000 + this.hold * 0.15);
+            return { nx: this.smoothX, ny: this.smoothY, strength, active, source: "motion-hand" };
+          } catch (error) {
+            return null;
+          }
+        }
+      }
+
+      function applyHandCanvasNightVision() {
+        // Night vision applicata al canvas semantico della mano: la texture di input contiene
+        // solo landmark e ossatura, quindi la sfera al plasma non puo generare tracce.
+        if (!handNightVisionProcessor || !handTraceCanvas) return handTraceCanvas;
+        const processed = handNightVisionProcessor.render(handTraceCanvas);
+        return processed || handTraceCanvas;
+      }
+
+      function drawHandToTraceCanvas(hand, videoWidth, videoHeight) {
+        if (!handTraceCtx || !handTraceCanvas || !hand || !hand.keypoints || videoWidth <= 1 || videoHeight <= 1) return null;
+        const ctx = handTraceCtx;
+        const width = handTraceCanvas.width;
+        const height = handTraceCanvas.height;
+        ctx.clearRect(0, 0, width, height);
+        ctx.save();
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.strokeStyle = "rgba(255,255,255,1)";
+        ctx.fillStyle = "rgba(255,255,255,1)";
+        ctx.lineWidth = 9;
+
+        const pts = hand.keypoints.map((kp) => {
+          if (!kp || !Number.isFinite(kp.x) || !Number.isFinite(kp.y)) return null;
+          return {
+            x: (kp.x / videoWidth) * width,
+            y: (kp.y / videoHeight) * height,
+          };
+        });
+
+        for (const [a, b] of handOverlayConnections) {
+          const pa = pts[a];
+          const pb = pts[b];
+          if (!pa || !pb) continue;
+          ctx.beginPath();
+          ctx.moveTo(pa.x, pa.y);
+          ctx.lineTo(pb.x, pb.y);
+          ctx.stroke();
+        }
+
+        for (const p of pts) {
+          if (!p) continue;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+        applyHandCanvasNightVision();
+        return pts;
+      }
+
+      function getHandTrackingPoint(hand, videoWidth, videoHeight) {
+        const keypoints = hand && hand.keypoints ? hand.keypoints : [];
+        if (!keypoints.length) return null;
+
+        // La traccia nasce solo dal canvas semantico della mano: qui vengono disegnati
+        // esclusivamente landmark e ossatura rilevati dal modello, non pixel luminosi della webcam.
+        const pts = drawHandToTraceCanvas(hand, videoWidth || 1, videoHeight || 1);
+        if (!pts) return null;
+
+        const fingertip = pts[8] || pts[12] || pts[4] || pts[0];
+        if (fingertip && Number.isFinite(fingertip.x) && Number.isFinite(fingertip.y)) {
+          return { x: fingertip.x / handTraceCanvas.width * (videoWidth || 1), y: fingertip.y / handTraceCanvas.height * (videoHeight || 1), source: "hand-canvas-nightvision" };
+        }
+
+        let sumX = 0;
+        let sumY = 0;
+        let count = 0;
+        for (const point of pts) {
+          if (point && Number.isFinite(point.x) && Number.isFinite(point.y)) {
+            sumX += point.x;
+            sumY += point.y;
+            count++;
+          }
+        }
+        if (count <= 0) return null;
+        return { x: (sumX / count) / handTraceCanvas.width * (videoWidth || 1), y: (sumY / count) / handTraceCanvas.height * (videoHeight || 1), source: "hand-canvas-nightvision" };
+      }
+
+      const nightVisionProcessor = new NightVisionShaderProcessor(nightVisionCanvas);
+      const handNightVisionProcessor = new NightVisionShaderProcessor(handNightVisionCanvas);
+
+      function updateFullscreenButton() {
+        if (!fullscreenButton) return;
+        fullscreenButton.textContent = document.fullscreenElement ? "exit fullscreen" : "fullscreen";
+        fullscreenButton.setAttribute("aria-label", document.fullscreenElement ? "Esci dal fullscreen" : "Attiva fullscreen");
+      }
+
+      async function toggleFullscreen() {
+        try {
+          if (!document.fullscreenElement) {
+            await document.documentElement.requestFullscreen();
+          } else {
+            await document.exitFullscreen();
+          }
+        } catch (error) {
+          console.warn("Fullscreen unavailable", error);
+        }
+        updateFullscreenButton();
+      }
+
+      if (fullscreenButton) {
+        fullscreenButton.addEventListener("click", (event) => {
+          event.stopPropagation();
+          toggleFullscreen();
+        });
+      }
+      document.addEventListener("fullscreenchange", updateFullscreenButton);
+      window.addEventListener("keydown", (event) => {
+        if (event.key && event.key.toLowerCase() === "f") {
+          toggleFullscreen();
+        }
+      });
+      updateFullscreenButton();
+
+      const tmpVecA = new THREE.Vector3();
+      const tmpVecB = new THREE.Vector3();
+      const tmpVecC = new THREE.Vector3();
+      const tmpVecD = new THREE.Vector3();
+      const tmpColor = new THREE.Color();
+      const upVector = new THREE.Vector3(0, 1, 0);
+      const rightVector = new THREE.Vector3(1, 0, 0);
+
+      function clamp01(value) {
+        return Math.min(1, Math.max(0, value));
+      }
+
+      function lerpRange(value, inMin, inMax, outMin, outMax) {
+        const t = clamp01((value - inMin) / (inMax - inMin));
+        return outMin + (outMax - outMin) * t;
+      }
+
+      function setHandOverlayVisible(visible) {
+        if (!handOverlayCanvas || !handOverlayCtx) return;
+        handOverlayCanvas.style.display = "none";
+        if (!visible) {
+          handOverlayCtx.clearRect(0, 0, handOverlayCanvas.width, handOverlayCanvas.height);
+        }
+      }
+
+      function drawHandOverlay(hands) {
+        if (!handOverlayCanvas || !handOverlayCtx || handOverlayCanvas.style.display === "none") return;
+        const ctx = handOverlayCtx;
+        const width = handOverlayCanvas.width;
+        const height = handOverlayCanvas.height;
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
+        ctx.fillRect(0, 0, width, height);
+
+        if (!hands || hands.length === 0) return;
+
+        const videoWidth = webcamVideo && webcamVideo.videoWidth ? webcamVideo.videoWidth : 1;
+        const videoHeight = webcamVideo && webcamVideo.videoHeight ? webcamVideo.videoHeight : 1;
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.92)";
+        ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
+        ctx.lineWidth = 1.35;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        for (const hand of hands) {
+          const keypoints = hand && hand.keypoints ? hand.keypoints : [];
+          if (keypoints.length === 0) continue;
+
+          const point = (index) => {
+            const kp = keypoints[index];
+            if (!kp) return null;
+            return {
+              x: (kp.x / videoWidth) * width,
+              y: (kp.y / videoHeight) * height,
+            };
+          };
+
+          ctx.beginPath();
+          for (const [a, b] of handOverlayConnections) {
+            const pa = point(a);
+            const pb = point(b);
+            if (!pa || !pb) continue;
+            ctx.moveTo(pa.x, pa.y);
+            ctx.lineTo(pb.x, pb.y);
+          }
+          ctx.stroke();
+
+          for (let i = 0; i < keypoints.length; i++) {
+            const p = point(i);
+            if (!p) continue;
+            const radius = i === 0 || i === 4 || i === 8 || i === 12 || i === 16 || i === 20 ? 2.4 : 1.65;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        ctx.restore();
+      }
+
+      function shortErrorTag(message) {
+        if (!message) return "ok";
+        return String(message)
+          .toLowerCase()
+          .replace(/\s+/g, "_")
+          .replace(/[^a-z0-9_\-.]/g, "")
+          .slice(0, 20);
+      }
+
+      function pseudoNoise(x, y, z) {
+        const n = Math.sin(x * 12.9898 + y * 78.233 + z * 37.719) * 43758.5453;
+        return n - Math.floor(n);
+      }
+
+      function layeredNoise(x, y, z, t) {
+        const a = pseudoNoise(x + t * 0.7, y, z);
+        const b = pseudoNoise(x * 1.9, y + t * 0.45, z * 1.7);
+        const c = pseudoNoise(x * 0.8, y * 1.6, z + t * 0.3);
+        return a * 0.52 + b * 0.31 + c * 0.17;
+      }
+
+      function createRadialTexture(inner = 0.12, outer = 1) {
+        const size = 128;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, size, size);
+        const outerRadius = size * 0.5 * outer;
+        const innerRadius = size * 0.5 * inner;
+        const gradient = ctx.createRadialGradient(size * 0.5, size * 0.5, innerRadius, size * 0.5, size * 0.5, outerRadius);
+        gradient.addColorStop(0, "rgba(255,255,255,1)");
+        gradient.addColorStop(0.18, "rgba(255,255,255,0.9)");
+        gradient.addColorStop(0.32, "rgba(255,255,255,0.22)");
+        gradient.addColorStop(0.72, "rgba(255,255,255,0.035)");
+        gradient.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, size, size);
+        return new THREE.CanvasTexture(canvas);
+      }
+
+      function createSquareTexture() {
+        const size = 64;
+        const canvas = document.createElement("canvas");
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, size, size);
+        ctx.strokeStyle = "rgba(255,255,255,0.95)";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(10, 10, size - 20, size - 20);
+        ctx.fillStyle = "rgba(255,255,255,0.22)";
+        ctx.fillRect(18, 18, size - 36, size - 36);
+        return new THREE.CanvasTexture(canvas);
+      }
+
+      function createLabelTexture(text) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 512;
+        canvas.height = 128;
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "rgba(0,0,0,0.25)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = "rgba(255,255,255,0.35)";
+        ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
+        ctx.font = "28px Consolas, monospace";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, 26, 64);
+        return new THREE.CanvasTexture(canvas);
+      }
+
+      const textures = {
+        glow: createRadialTexture(0.04, 1),
+        label: null,
+        marker: null,
+      };
+
+      class MemoryField {
+        constructor(volume = 420) {
+          this.volume = volume;
+          this.traces = [];
+          this.samples = 0;
+          this.globalDensity = 0;
+          this.maxTraces = 520;
+          this.gridX = 24;
+          this.gridY = 12;
+          this.gridZ = 24;
+          this.traceGeometry = new THREE.BufferGeometry();
+          this.tracePositions = new Float32Array(this.maxTraces * 3);
+          this.traceColors = new Float32Array(this.maxTraces * 3);
+          this.traceGeometry.setAttribute("position", new THREE.BufferAttribute(this.tracePositions, 3));
+          this.traceGeometry.setAttribute("color", new THREE.BufferAttribute(this.traceColors, 3));
+          this.traceMaterial = new THREE.PointsMaterial({
+            size: 1.1,
+            transparent: true,
+            opacity: 0.85,
+            depthWrite: false,
+            vertexColors: true,
+            map: textures.glow,
+            blending: THREE.AdditiveBlending,
+          });
+          this.points = new THREE.Points(this.traceGeometry, this.traceMaterial);
+          this.points.frustumCulled = false;
+          this.grid = new Float32Array(this.gridX * this.gridY * this.gridZ);
+        }
+
+        recordPresence(position, intensity = 1) {
+          const strength = Math.max(0.04, intensity);
+          this.traces.push({
+            position: position.clone(),
+            age: 0,
+            life: 9999,
+            strength,
+            radius: 10 + strength * 30,
+          });
+
+          this.deposit(position, strength);
+
+          if (this.traces.length > this.maxTraces) {
+            this.traces.splice(0, this.traces.length - this.maxTraces);
+          }
+        }
+
+        sample(position) {
+          const fx = THREE.MathUtils.mapLinear(position.x, -this.volume, this.volume, 0, this.gridX - 1);
+          const fy = THREE.MathUtils.mapLinear(position.y, -this.volume * 0.5, this.volume * 0.5, 0, this.gridY - 1);
+          const fz = THREE.MathUtils.mapLinear(position.z, -this.volume, this.volume, 0, this.gridZ - 1);
+
+          const x0 = Math.floor(fx);
+          const y0 = Math.floor(fy);
+          const z0 = Math.floor(fz);
+          const x1 = x0 + 1;
+          const y1 = y0 + 1;
+          const z1 = z0 + 1;
+          const tx = fx - x0;
+          const ty = fy - y0;
+          const tz = fz - z0;
+
+          const c000 = this._sampleCell(x0, y0, z0);
+          const c100 = this._sampleCell(x1, y0, z0);
+          const c010 = this._sampleCell(x0, y1, z0);
+          const c110 = this._sampleCell(x1, y1, z0);
+          const c001 = this._sampleCell(x0, y0, z1);
+          const c101 = this._sampleCell(x1, y0, z1);
+          const c011 = this._sampleCell(x0, y1, z1);
+          const c111 = this._sampleCell(x1, y1, z1);
+
+          const x00 = c000 * (1 - tx) + c100 * tx;
+          const x10 = c010 * (1 - tx) + c110 * tx;
+          const x01 = c001 * (1 - tx) + c101 * tx;
+          const x11 = c011 * (1 - tx) + c111 * tx;
+          const y0Mix = x00 * (1 - ty) + x10 * ty;
+          const y1Mix = x01 * (1 - ty) + x11 * ty;
+          const gridDensity = y0Mix * (1 - tz) + y1Mix * tz;
+
+          let traceDensity = 0;
+          for (let i = this.traces.length - 1; i >= 0; i--) {
+            const trace = this.traces[i];
+            const distance = trace.position.distanceTo(position);
+            const falloff = clamp01(1 - distance / trace.radius);
+            traceDensity += falloff * falloff * trace.strength;
+          }
+
+          return Math.log1p(gridDensity + traceDensity * 0.9);
+        }
+
+        update(dt) {
+          let active = 0;
+          let totalDensity = 0;
+
+          for (let i = this.traces.length - 1; i >= 0; i--) {
+            const trace = this.traces[i];
+            trace.age += dt;
+            trace.position.y += Math.sin(trace.age * 0.6 + trace.position.x * 0.01) * dt * 0.05;
+            trace.position.x += Math.cos(trace.age * 0.45 + trace.position.z * 0.01) * dt * 0.03;
+            trace.position.z += Math.sin(trace.age * 0.5 + trace.position.x * 0.008) * dt * 0.03;
+            active++;
+            totalDensity += trace.strength;
+          }
+
+          this.globalDensity = active > 0 ? totalDensity / active : this.globalDensity;
+
+          const positions = this.traceGeometry.attributes.position.array;
+          const colors = this.traceGeometry.attributes.color.array;
+          let cursor = 0;
+
+          for (; cursor < this.traces.length && cursor < this.maxTraces; cursor++) {
+            const trace = this.traces[cursor];
+            positions[cursor * 3] = trace.position.x;
+            positions[cursor * 3 + 1] = trace.position.y;
+            positions[cursor * 3 + 2] = trace.position.z;
+            const brightness = clamp01(0.25 + trace.strength * 0.18 + this.sample(trace.position) * 0.12);
+            colors[cursor * 3] = brightness;
+            colors[cursor * 3 + 1] = brightness;
+            colors[cursor * 3 + 2] = brightness;
+          }
+
+          for (; cursor < this.maxTraces; cursor++) {
+            positions[cursor * 3] = 9999;
+            positions[cursor * 3 + 1] = 9999;
+            positions[cursor * 3 + 2] = 9999;
+            colors[cursor * 3] = 0;
+            colors[cursor * 3 + 1] = 0;
+            colors[cursor * 3 + 2] = 0;
+          }
+
+          this.traceGeometry.attributes.position.needsUpdate = true;
+          this.traceGeometry.attributes.color.needsUpdate = true;
+          this.samples = active;
+        }
+
+        deposit(position, intensity = 1) {
+          const fx = THREE.MathUtils.mapLinear(position.x, -this.volume, this.volume, 0, this.gridX - 1);
+          const fy = THREE.MathUtils.mapLinear(position.y, -this.volume * 0.5, this.volume * 0.5, 0, this.gridY - 1);
+          const fz = THREE.MathUtils.mapLinear(position.z, -this.volume, this.volume, 0, this.gridZ - 1);
+          const cx = Math.round(fx);
+          const cy = Math.round(fy);
+          const cz = Math.round(fz);
+
+          for (let dz = -1; dz <= 1; dz++) {
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                const distance = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
+                const falloff = distance === 0 ? 1 : distance === 1 ? 0.55 : distance === 2 ? 0.28 : 0.12;
+                const index = this._gridIndex(cx + dx, cy + dy, cz + dz);
+                if (index >= 0) {
+                  this.grid[index] += intensity * falloff;
+                }
+              }
+            }
+          }
+        }
+
+        getHotspots(limit = 8, threshold = 1.4) {
+          const hotspots = [];
+          for (let z = 0; z < this.gridZ; z++) {
+            for (let y = 0; y < this.gridY; y++) {
+              for (let x = 0; x < this.gridX; x++) {
+                const value = this.grid[this._gridIndex(x, y, z)];
+                if (value >= threshold) {
+                  hotspots.push({ x, y, z, value });
+                }
+              }
+            }
+          }
+          hotspots.sort((left, right) => right.value - left.value);
+          return hotspots.slice(0, limit);
+        }
+
+        cellToWorld(x, y, z) {
+          return new THREE.Vector3(
+            THREE.MathUtils.mapLinear(x + 0.5, 0, this.gridX, -this.volume, this.volume),
+            THREE.MathUtils.mapLinear(y + 0.5, 0, this.gridY, -this.volume * 0.5, this.volume * 0.5),
+            THREE.MathUtils.mapLinear(z + 0.5, 0, this.gridZ, -this.volume, this.volume)
+          );
+        }
+
+        _gridIndex(x, y, z) {
+          if (x < 0 || x >= this.gridX || y < 0 || y >= this.gridY || z < 0 || z >= this.gridZ) {
+            return -1;
+          }
+          return x + y * this.gridX + z * this.gridX * this.gridY;
+        }
+
+        _sampleCell(x, y, z) {
+          const index = this._gridIndex(x, y, z);
+          if (index < 0) {
+            return 0;
+          }
+          return this.grid[index];
+        }
+      }
+
+      class Node3D {
+        constructor(index, basePosition, textureSet) {
+          this.index = index;
+          this.basePosition = basePosition.clone();
+          this.position = basePosition.clone();
+          this.velocity = new THREE.Vector3();
+          this.memory = 0.12 + Math.random() * 0.25;
+          this.affinity = Math.random();
+          this.energy = 0.25 + Math.random() * 0.35;
+          this.visits = 0;
+          this.seed = Math.random() * 1000;
+          this.reactionDelay = 0;
+          this.reactionPulse = 0;
+          this.labelActive = false;
+          this.group = new THREE.Group();
+
+          const geometry = new THREE.SphereGeometry(0.9, 14, 10);
+          this.body = new THREE.Mesh(
+            geometry,
+            new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.92, depthWrite: false })
+          );
+          this.group.add(this.body);
+
+          this.glow = new THREE.Sprite(
+            new THREE.SpriteMaterial({
+              map: textureSet.glow,
+              color: 0xffffff,
+              transparent: true,
+              depthWrite: false,
+              blending: THREE.AdditiveBlending,
+              alphaTest: 0.02,
+              opacity: 0.24,
+            })
+          );
+          this.glow.scale.set(16, 16, 1);
+          this.group.add(this.glow);
+
+          this.marker = null;
+
+          this.label = null;
+          if (this.labelActive) {
+            const labelTexture = createLabelTexture(`N-${String(index).padStart(3, "0")} // TRACE`);
+            this.label = new THREE.Sprite(
+              new THREE.SpriteMaterial({
+                map: labelTexture,
+                transparent: true,
+                depthWrite: false,
+                color: 0xffffff,
+              })
+            );
+            this.label.scale.set(16, 4, 1);
+            this.label.position.set(8, 5.5, 0);
+            this.group.add(this.label);
+          }
+
+          this.group.position.copy(this.position);
+        }
+
+        update(dt, presence, motionState, memoryField, time) {
+          const calm = clamp01(1 - motionState.speed * 0.9);
+          const speed = motionState.speed;
+          const density = memoryField.sample(this.position);
+          const toPresence = tmpVecA.copy(presence).sub(this.position);
+          const presenceDistance = toPresence.length();
+          const influenceRadius = lerpRange(calm, 0, 1, 70, 180);
+          const tracePull = clamp01(1 - presenceDistance / influenceRadius);
+          const localNoise = layeredNoise(this.basePosition.x * 0.02, this.basePosition.y * 0.02, this.basePosition.z * 0.02, time + this.seed);
+
+          tmpVecB.copy(this.basePosition);
+          tmpVecB.x += Math.sin(time * 0.9 + this.seed) * 4.5;
+          tmpVecB.y += Math.cos(time * 0.8 + this.seed * 1.3) * 3.2;
+          tmpVecB.z += Math.sin(time * 0.7 + this.seed * 0.9) * 4.5;
+
+          if (tracePull > 0) {
+            const pulse = tracePull * (1.2 + this.memory * 1.8);
+            tmpVecB.add(toPresence.normalize().multiplyScalar(22 * pulse));
+            this.visits += dt * pulse;
+            this.memory = THREE.MathUtils.lerp(this.memory, clamp01(0.2 + density * 0.4 + pulse * 0.55), 0.04);
+            this.energy = THREE.MathUtils.lerp(this.energy, clamp01(0.35 + pulse + density * 0.3), 0.05);
+            this.reactionDelay = Math.max(this.reactionDelay, 0.2 + presenceDistance * 0.0018);
+            this.reactionPulse = Math.min(1, this.reactionPulse + pulse * 0.08);
+
+            if (typeof traceSystem !== "undefined" && traceSystem.recording && presenceDistance < 42 && density > 0.1) {
+              memoryField.recordPresence(this.position, 0.6 + pulse * 0.8);
+            }
+          } else {
+            this.memory = THREE.MathUtils.lerp(this.memory, clamp01(0.08 + density * 0.3), 0.015);
+            this.energy = THREE.MathUtils.lerp(this.energy, clamp01(0.2 + density * 0.22), 0.02);
+          }
+
+          if (this.reactionDelay > 0) {
+            this.reactionDelay -= dt;
+            if (this.reactionDelay <= 0) {
+              this.reactionPulse = 1;
+            }
+          }
+
+          const slowDrift = 1 + settings.drift;
+          this.velocity.x += (tmpVecB.x - this.position.x) * 0.016 * slowDrift;
+          this.velocity.y += (tmpVecB.y - this.position.y) * 0.016 * slowDrift;
+          this.velocity.z += (tmpVecB.z - this.position.z) * 0.016 * slowDrift;
+
+          const disturbance = speed * 0.5;
+          this.velocity.x += Math.sin(time * 4 + this.seed) * 0.02 * disturbance;
+          this.velocity.y += Math.cos(time * 3.5 + this.seed * 1.4) * 0.02 * disturbance;
+          this.velocity.z += Math.sin(time * 3.1 + this.seed * 0.7) * 0.02 * disturbance;
+
+          this.position.addScaledVector(this.velocity, dt * 55);
+          this.velocity.multiplyScalar(0.92);
+
+          this.position.x += Math.sin(time * 1.7 + this.seed) * 0.14 * localNoise;
+          this.position.y += Math.cos(time * 1.4 + this.seed * 1.3) * 0.12 * localNoise;
+          this.position.z += Math.sin(time * 1.2 + this.seed * 0.8) * 0.14 * localNoise;
+
+          const maxRadius = 230 + this.memory * 70;
+          this.position.x = THREE.MathUtils.clamp(this.position.x, -maxRadius, maxRadius);
+          this.position.y = THREE.MathUtils.clamp(this.position.y, -maxRadius * 0.7, maxRadius * 0.7);
+          this.position.z = THREE.MathUtils.clamp(this.position.z, -maxRadius, maxRadius);
+
+          this.group.position.copy(this.position);
+          this.group.rotation.x = Math.sin(time * 0.4 + this.seed) * 0.12;
+          this.group.rotation.y = Math.cos(time * 0.3 + this.seed) * 0.15;
+          this.group.rotation.z = Math.sin(time * 0.25 + this.seed * 0.7) * 0.08;
+
+          const glowScale = 9 + this.memory * 18 + this.energy * 10 + this.reactionPulse * 11 + settings.glowBoost * 3;
+          this.glow.scale.set(glowScale, glowScale, 1);
+          this.glow.material.opacity = clamp01(0.09 + this.memory * 0.32 + this.reactionPulse * 0.34);
+          if (this.marker) this.marker.material.opacity = 0;
+          this.body.material.opacity = clamp01(0.38 + this.memory * 0.42 + this.reactionPulse * 0.18);
+          this.body.scale.setScalar(0.82 + this.memory * 0.52 + this.reactionPulse * 0.28);
+
+          if (this.label) {
+            this.label.material.opacity = clamp01(0.2 + this.memory * 0.8);
+            this.label.position.x = 7 + this.reactionPulse * 2;
+            this.label.position.y = 5 + this.memory * 2.2;
+          }
+
+          if (this.reactionPulse > 0) {
+            this.reactionPulse = Math.max(0, this.reactionPulse - dt * 0.5);
+          }
+        }
+      }
+
+      class Connection3D {
+        constructor(nodeA, nodeB, bundleIndex, bundleCount) {
+          this.nodeA = nodeA;
+          this.nodeB = nodeB;
+          this.bundleIndex = bundleIndex;
+          this.bundleCount = bundleCount;
+          this.baseStrength = 0;
+          this.memoryAffinity = 0;
+          this.activation = 0.08 + Math.random() * 0.18;
+          this.active = true;
+          this.curve = new THREE.CatmullRomCurve3([new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()]);
+          this.segments = 48;
+          this.points = new Float32Array((this.segments + 1) * 3);
+          this.key = connectionKey(nodeA, nodeB);
+
+          const geometry = new THREE.BufferGeometry();
+          geometry.setAttribute("position", new THREE.BufferAttribute(this.points, 3));
+
+          const opacity = bundleIndex === 0 ? 0.42 : 0.18;
+          const width = bundleIndex === 0 ? 1.6 : 0.8;
+          this.material = new THREE.LineBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity,
+            depthWrite: false,
+            depthTest: false,
+            fog: false,
+            blending: THREE.AdditiveBlending,
+          });
+          this.line = new THREE.Line(geometry, this.material);
+          this.line.frustumCulled = false;
+          this.line.renderOrder = 60;
+          this.width = width;
+          this.phase = Math.random() * 10;
+        }
+
+        update(time, motionState, memoryField, presence) {
+          const a = this.nodeA.position;
+          const b = this.nodeB.position;
+          const distance = a.distanceTo(b);
+          const memoryA = this.nodeA.memory;
+          const memoryB = this.nodeB.memory;
+          const affinity = 1 - clamp01(distance / settings.connectionDistance);
+          const midpoint = tmpVecA.copy(a).add(b).multiplyScalar(0.5);
+          const quarterA = a.clone().lerp(b, 0.25);
+          const quarterB = a.clone().lerp(b, 0.75);
+          const pathMemory = (memoryField.sample(quarterA) + memoryField.sample(midpoint) + memoryField.sample(quarterB)) / 3;
+          const presenceDistance = presence.distanceTo(midpoint);
+          const presenceOpen = clamp01(1 - presenceDistance / 200);
+          const motionNoise = motionState.speed * 0.22;
+          const calm = clamp01(1 - motionState.speed * 0.8);
+          const driftTowardPresence = motionState.idleTime > 1.2 ? (motionState.idleTime - 1.2) * 2.2 : 0;
+          const plasmaShake = 0.45 + settings.drift * 1.7 + motionState.disturbance * 2.2;
+          this.activation = THREE.MathUtils.clamp(this.activation + (pathMemory * 0.004 + presenceOpen * 0.003 + calm * 0.0015), 0, 10);
+          this.memoryAffinity = (memoryA + memoryB) * 0.25 + pathMemory * 0.95 + this.activation * 0.05;
+          this.baseStrength = clamp01(affinity * 0.45 + this.memoryAffinity * 0.55 + this.activation * 0.05);
+
+          for (let bundle = 0; bundle < this.bundleCount; bundle++) {
+            const curveOffset = (bundle - (this.bundleCount - 1) * 0.5) * 2.8;
+            const side = tmpVecB.copy(b).sub(a).normalize();
+            const normal = tmpVecC.copy(side).cross(upVector).normalize();
+            if (normal.lengthSq() < 0.001) {
+              normal.copy(rightVector);
+            }
+
+            const sag = 5 + distance * 0.035 + Math.sin(time * (2.1 + settings.drift) + this.phase + bundle) * (7 * plasmaShake);
+            const pulseWarp = layeredNoise(a.x * 0.045 + bundle, a.y * 0.035, b.z * 0.045, time * (1.8 + settings.drift) + this.phase) - 0.5;
+            const opening = settings.networkOpen * 2.2 + calm * 0.55 + presenceOpen * 1.2;
+            const control1 = midpoint.clone()
+              .addScaledVector(normal, curveOffset + pulseWarp * 32 * settings.filamentNoise * plasmaShake)
+              .addScaledVector(side, -sag * 0.45 * opening)
+              .addScaledVector(presence, driftTowardPresence * 0.25 * (1 - bundle * 0.18));
+            const control2 = midpoint.clone()
+              .addScaledVector(normal, -(curveOffset + pulseWarp * 32 * settings.filamentNoise * plasmaShake))
+              .addScaledVector(side, sag * 0.45 * opening)
+              .addScaledVector(presence, driftTowardPresence * 0.18 * (1 - bundle * 0.18));
+
+            if (this.bundleIndex === bundle) {
+              this.curve.points = [a.clone(), control1.clone(), control2.clone(), b.clone()];
+              const plasmaAxis = tmpVecD.copy(b).sub(a);
+              const lineLength = Math.max(1, plasmaAxis.length());
+              const plasmaDir = plasmaAxis.normalize();
+              const plasmaNormal = tmpVecC.copy(plasmaDir).cross(upVector).normalize();
+              if (plasmaNormal.lengthSq() < 0.001) plasmaNormal.copy(rightVector);
+              const plasmaSide = tmpVecB.copy(plasmaDir).cross(plasmaNormal).normalize();
+              const angularAmp = (2.2 + this.baseStrength * 8.5 + this.activation * 0.55 + motionState.disturbance * 18) * settings.filamentNoise;
+              const kinkA = 0.22 + 0.08 * Math.sin(this.phase + time * 0.7);
+              const kinkB = 0.64 + 0.10 * Math.cos(this.phase * 1.7 + time * 0.6);
+
+              for (let i = 0; i <= this.segments; i++) {
+                const t = i / this.segments;
+                const fade = Math.sin(Math.PI * t);
+                const angularStep = t < kinkA ? t / Math.max(0.001, kinkA) : (t < kinkB ? 1 - (t - kinkA) / Math.max(0.001, kinkB - kinkA) * 0.45 : (1 - t) / Math.max(0.001, 1 - kinkB));
+                const snap = Math.floor(t * 7.0) / 7.0;
+                const electric = Math.sin(time * (8.0 + settings.drift * 2.0) + this.phase + snap * 17.0) * 0.55 + Math.sin(time * 13.0 + this.phase * 2.3 + t * 31.0) * 0.45;
+                const point = a.clone().lerp(b, t);
+                point.addScaledVector(plasmaNormal, electric * angularAmp * fade + (angularStep - 0.35) * angularAmp * 0.75);
+                point.addScaledVector(plasmaSide, Math.cos(time * 6.5 + this.phase + snap * 19.0) * angularAmp * 0.42 * fade);
+                point.addScaledVector(plasmaDir, Math.sin(time * 10.5 + this.phase + t * 12.0) * 0.75 * motionState.disturbance * fade);
+                this.points[i * 3] = point.x;
+                this.points[i * 3 + 1] = point.y;
+                this.points[i * 3 + 2] = point.z;
+              }
+
+              this.line.geometry.attributes.position.needsUpdate = true;
+            }
+          }
+
+          const cameraDistance = camera.position.distanceTo(this.line.position);
+          const distanceVisibility = clamp01((cameraDistance - 220) / 760);
+          const plasmaFlicker = 0.08 * Math.sin(time * 12.0 + this.phase) + 0.05 * Math.sin(time * 21.0 + this.phase * 1.8);
+          const alpha = clamp01(0.48 + this.baseStrength * 0.9 + this.activation * 0.045 + settings.networkOpen * 0.18 + motionNoise + distanceVisibility * 0.38 + plasmaFlicker);
+          this.material.opacity = this.bundleIndex === 0 ? Math.max(0.56, alpha) : Math.max(0.28, alpha * 0.62);
+          this.line.scale.setScalar(1 + this.memoryAffinity * 0.08 + this.activation * 0.015 + distanceVisibility * 0.18);
+          this.line.material.linewidth = this.width;
+        }
+
+        markActivation(amount = 0.2) {
+          this.activation = Math.min(this.activation + amount, 10);
+        }
+
+        getPulseCurve() {
+          const a = this.nodeA.position;
+          const b = this.nodeB.position;
+          const midpoint = a.clone().add(b).multiplyScalar(0.5);
+          return new THREE.CatmullRomCurve3([
+            a.clone(),
+            a.clone().lerp(midpoint, 0.35).addScalar(0.01),
+            midpoint,
+            midpoint.clone().lerp(b, 0.65).addScalar(0.01),
+            b.clone(),
+          ]);
+        }
+      }
+
+      class Pulse3D {
+        constructor(connection, soundEngine) {
+          this.connection = connection;
+          this.curve = connection.getPulseCurve();
+          this.progress = Math.random() * 0.2;
+          this.speed = 0.05 + connection.baseStrength * 0.09 + connection.activation * 0.008 + Math.random() * 0.04;
+          this.life = 0;
+          this.maxLife = 8 + connection.activation * 0.8 + Math.random() * 5;
+          this.soundEngine = soundEngine;
+          this.mesh = new THREE.Mesh(
+            new THREE.SphereGeometry(0.85, 10, 10),
+            new THREE.MeshBasicMaterial({
+              color: 0xffffff,
+              transparent: true,
+              opacity: 0.95,
+              depthWrite: false,
+            })
+          );
+          this.halo = new THREE.Sprite(
+            new THREE.SpriteMaterial({
+              map: textures.glow,
+              color: 0xffffff,
+              transparent: true,
+              depthWrite: false,
+              blending: THREE.AdditiveBlending,
+              alphaTest: 0.02,
+              opacity: 0.68,
+            })
+          );
+          this.halo.scale.set(6.5, 6.5, 1);
+          this.mesh.add(this.halo);
+          this.soundEngine.emitPing(0.35 + this.connection.baseStrength * 0.45 + this.connection.activation * 0.04);
+        }
+
+        update(dt, time) {
+          this.life += dt;
+          this.progress += dt * this.speed;
+          const point = this.curve.getPointAt(clamp01(this.progress));
+          this.mesh.position.copy(point);
+          const pulseScale = 1 + Math.sin(time * 10 + this.life * 2.5) * 0.06;
+          this.mesh.scale.setScalar(1 + this.connection.baseStrength * 0.28);
+          this.halo.scale.setScalar(5.2 + this.connection.baseStrength * 3.6 * pulseScale + this.connection.activation * 0.3);
+          this.mesh.material.opacity = clamp01(0.7 + this.connection.baseStrength * 0.3);
+          return this.progress >= 1 || this.life > this.maxLife;
+        }
+      }
+
+      class SoundEngine {
+        constructor() {
+          this.started = false;
+          this.ready = false;
+          this.motion = 0;
+          this.disturbance = 0;
+          this.memoryDensity = 0;
+          this.noiseAmount = 0;
+          this.pingTimer = 0;
+          this.wetness = 0.35;
+          this.reverb = null;
+          this.filter = null;
+          this.masterGain = null;
+          this.droneGain = null;
+          this.noiseGain = null;
+          this.cosmicGain = null;
+          this.cosmicFilter = null;
+          this.cosmicNoise = null;
+          this.cosmicLfo = null;
+          this.droneOscillators = [];
+          this.pingSynth = null;
+          this.glitchSynth = null;
+          this.introPlayed = false;
+          this.introNodes = [];
+        }
+
+        async start() {
+          if (this.started) {
+            return;
+          }
+          this.started = true;
+          await Tone.start();
+
+          this.reverb = new Tone.Reverb({ decay: 8.5, preDelay: 0.08, wet: 0.28 });
+          await this.reverb.generate();
+
+          this.filter = new Tone.Filter({ frequency: 95, type: "lowpass", rolloff: -24 });
+          this.masterGain = new Tone.Gain(0.0);
+          this.droneGain = new Tone.Gain(0.0);
+          this.noiseGain = new Tone.Gain(0.0);
+
+          this.filter.chain(this.droneGain, this.masterGain, this.reverb, Tone.Destination);
+          this.noiseGain.chain(this.masterGain, this.reverb, Tone.Destination);
+
+          const droneFrequencies = [28, 42, 56];
+          for (let i = 0; i < droneFrequencies.length; i++) {
+            const osc = new Tone.Oscillator({
+              frequency: droneFrequencies[i],
+              type: "sine",
+              volume: -31,
+            }).connect(this.filter);
+            osc.start();
+            this.droneOscillators.push(osc);
+          }
+
+          this.pingSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.04,
+            octaves: 2.5,
+            oscillator: { type: "sine" },
+            envelope: { attack: 0.02, decay: 1.4, sustain: 0.0, release: 1.8 },
+          }).connect(this.reverb);
+
+          this.glitchSynth = new Tone.NoiseSynth({
+            noise: { type: "white" },
+            envelope: { attack: 0.001, decay: 0.08, sustain: 0 },
+          }).connect(this.noiseGain);
+
+          this.ready = true;
+          this.startCosmicBackground();
+          if (!traceSystem.enabled && startHint) {
+            startHint.textContent = "nessuna traccia rilevata";
+            startHint.classList.add("is-visible");
+          }
+        }
+
+
+        startCosmicBackground() {
+          if (!this.ready || this.cosmicNoise) return;
+
+          // Fondo sonoro cosmico: morbido, continuo, senza crackle o scoppiettii.
+          this.cosmicGain = new Tone.Gain(0.012 * settings.audioDepth).connect(this.reverb);
+          this.cosmicFilter = new Tone.Filter({
+            frequency: 360,
+            type: "lowpass",
+            Q: 0.35,
+            rolloff: -24,
+          }).connect(this.cosmicGain);
+          this.cosmicNoise = new Tone.Noise({
+            type: "brown",
+            volume: -33,
+          }).connect(this.cosmicFilter);
+          this.cosmicLfo = new Tone.LFO({
+            frequency: 0.018,
+            min: 120,
+            max: 760,
+          }).connect(this.cosmicFilter.frequency);
+          this.cosmicNoise.start();
+          this.cosmicLfo.start();
+          this.cosmicGain.gain.rampTo(0.022 * settings.audioDepth, 10.0);
+        }
+
+
+        playIntroSound() {
+          if (!this.ready || this.introPlayed) {
+            return;
+          }
+          this.introPlayed = true;
+
+          const now = Tone.now() + 0.06;
+          const introBus = new Tone.Gain(0.0).connect(this.reverb);
+          introBus.gain.setValueAtTime(0.0, now);
+          introBus.gain.linearRampToValueAtTime(0.22 * settings.audioDepth, now + 0.9);
+          introBus.gain.exponentialRampToValueAtTime(0.001, now + 7.6);
+
+          const lowDrone = new Tone.Oscillator({
+            frequency: 28,
+            type: "sine",
+            volume: -9,
+          }).connect(introBus);
+          lowDrone.frequency.setValueAtTime(28, now);
+          lowDrone.frequency.exponentialRampToValueAtTime(63, now + 6.4);
+
+          const upperDrone = new Tone.Oscillator({
+            frequency: 91,
+            type: "triangle",
+            volume: -22,
+          }).connect(introBus);
+          upperDrone.detune.setValueAtTime(-18, now);
+          upperDrone.detune.linearRampToValueAtTime(22, now + 6.2);
+
+          const noiseFilter = new Tone.Filter({
+            frequency: 320,
+            type: "bandpass",
+            Q: 0.75,
+          }).connect(introBus);
+          const spaceNoise = new Tone.Noise({
+            type: "pink",
+            volume: -24,
+          }).connect(noiseFilter);
+          noiseFilter.frequency.setValueAtTime(260, now);
+          noiseFilter.frequency.exponentialRampToValueAtTime(2400, now + 3.8);
+          noiseFilter.frequency.exponentialRampToValueAtTime(520, now + 7.4);
+
+          const shimmerDelay = new Tone.FeedbackDelay({ delayTime: 0.22, feedback: 0.38, wet: 0.48 }).connect(this.reverb);
+          const shimmer = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: "sine" },
+            envelope: { attack: 0.08, decay: 0.9, sustain: 0.0, release: 2.8 },
+            volume: -18,
+          }).connect(shimmerDelay);
+
+          lowDrone.start(now);
+          upperDrone.start(now + 0.15);
+          spaceNoise.start(now + 0.25);
+
+          const notes = ["C5", "G5", "D6", "A5", "E6", "B5"];
+          notes.forEach((note, i) => {
+            shimmer.triggerAttackRelease(note, "1n", now + 1.1 + i * 0.52, 0.12 + i * 0.018);
+          });
+
+          lowDrone.stop(now + 7.8);
+          upperDrone.stop(now + 7.4);
+          spaceNoise.stop(now + 7.25);
+
+          this.introNodes.push(introBus, lowDrone, upperDrone, noiseFilter, spaceNoise, shimmerDelay, shimmer);
+          window.setTimeout(() => {
+            for (const node of this.introNodes) {
+              try { node.dispose(); } catch (error) {}
+            }
+            this.introNodes = [];
+          }, 9000);
+        }
+
+        emitPing(intensity = 0.5) {
+          if (!this.ready) {
+            return;
+          }
+          const now = Tone.now();
+          const note = 72 + intensity * 16;
+          this.pingSynth.triggerAttackRelease(note, "2n", now, 0.06 + intensity * 0.12);
+        }
+
+        emitGlitch(amount) {
+          // Disattivato: evita disturbo scoppiettante nel fondo sonoro.
+          return;
+        }
+
+        update(motionState, memoryDensity, dt) {
+          if (!this.ready) {
+            return;
+          }
+
+          this.motion = THREE.MathUtils.lerp(this.motion, motionState.speed, 0.08);
+          this.disturbance = THREE.MathUtils.lerp(this.disturbance, motionState.disturbance, 0.06);
+          this.memoryDensity = THREE.MathUtils.lerp(this.memoryDensity, memoryDensity, 0.06);
+
+          const calm = clamp01(1 - this.disturbance);
+          const noiseAmount = clamp01(this.disturbance * 1.2 - 0.18);
+          this.noiseAmount = THREE.MathUtils.lerp(this.noiseAmount, noiseAmount, 0.08);
+
+          const stage1 = clamp01(THREE.MathUtils.smoothstep(this.disturbance, 0.06, 0.18));
+          const stage2 = clamp01(THREE.MathUtils.smoothstep(this.disturbance, 0.16, 0.34));
+          const stage3 = clamp01(THREE.MathUtils.smoothstep(this.disturbance, 0.3, 0.54));
+          const stage4 = clamp01(THREE.MathUtils.smoothstep(this.disturbance, 0.5, 0.74));
+          const stage5 = clamp01(THREE.MathUtils.smoothstep(this.disturbance, 0.7, 0.92));
+
+          this.masterGain.gain.rampTo(lerpRange(this.disturbance, 0, 1, 0.006, 0.045) * settings.audioDepth, 0.9);
+          if (this.cosmicGain && this.cosmicFilter) {
+            const cosmicLevel = (0.018 + this.memoryDensity * 0.010 + this.disturbance * 0.004) * settings.audioDepth;
+            this.cosmicGain.gain.rampTo(cosmicLevel, 1.2);
+            this.cosmicFilter.Q.rampTo(0.28 + stage3 * 0.32, 1.1);
+          }
+          this.filter.frequency.rampTo(lerpRange(stage2 + stage5 * 0.25, 0, 1, 38, 135), 0.9);
+          this.droneGain.gain.rampTo(lerpRange(stage1 + stage2 + this.memoryDensity * 0.5, 0, 2, 0.0, 0.045 + stage5 * 0.012) * settings.audioDepth, 1.0);
+          this.reverb.wet.rampTo(lerpRange(stage3 + this.memoryDensity * 0.8 + stage5 * 0.35, 0, 2, 0.22, 0.38), 1.2);
+          this.noiseGain.gain.rampTo(0.0, 0.5);
+
+          for (let i = 0; i < this.droneOscillators.length; i++) {
+            const oscillator = this.droneOscillators[i];
+            const baseFrequency = [24, 36, 48.5][i];
+            const harmonicLift = 1 + stage4 * 0.12 + stage5 * 0.18;
+            oscillator.frequency.rampTo(baseFrequency * harmonicLift, 0.08);
+            oscillator.detune.rampTo((i - 1) * stage5 * 16, 0.08);
+          }
+
+          this.pingTimer -= dt;
+          const pingInterval = lerpRange(stage2 + stage3 + stage4 + stage5, 0, 4, 9.0, 4.2);
+          if (stage2 > 0.35 && this.pingTimer <= 0) {
+            this.emitPing(0.035 + stage2 * 0.045 + stage5 * 0.025);
+            this.pingTimer = pingInterval + Math.random() * pingInterval * 0.5;
+          }
+
+          // Niente glitch/noise impulsivo: il suono deve restare mistico e continuo.
+          // if (this.noiseAmount > 0.42) this.emitGlitch(this.noiseAmount * 0.45);
+        }
+      }
+
+      const memoryField = new MemoryField(420);
+      scene.add(memoryField.points);
+
+      const rootGroup = new THREE.Group();
+      scene.add(rootGroup);
+
+      const grid = new THREE.GridHelper(1000, 100, 0xffffff, 0x2c2c2c);
+      grid.position.y = -170;
+      grid.material.transparent = true;
+      grid.material.opacity = 0.14;
+      // grid removed: the installation keeps only the logo, traces, lines and glow nodes.
+
+      const guidePlaneGeometry = new THREE.PlaneGeometry(760, 760, 1, 1);
+      const guidePlaneMaterial = new THREE.MeshBasicMaterial({ color: 0x111111, wireframe: true, transparent: true, opacity: 0.13 });
+      const guidePlane = new THREE.Mesh(guidePlaneGeometry, guidePlaneMaterial);
+      guidePlane.rotation.x = -Math.PI / 2;
+      guidePlane.position.y = -124;
+      // guide plane removed to avoid opaque rotating rectangles.
+
+      const nodes = [];
+      const connections = [];
+      const connectionPairs = new Set();
+      const pulses = [];
+      const soundEngine = new SoundEngine();
+      const pulseLimiter = { clock: 0 };
+      let lastMemoryEvolveAt = 0;
+
+
+      const traceSystem = {
+        enabled: false,
+        recording: false,
+        current: null,
+        traces: [],
+        maxDuration: Infinity,
+        firstDetectionAt: 0,
+        sessionStartedAt: 0,
+        lastRecordAt: 0,
+        lastNormalized: new THREE.Vector2(0.5, 0.5),
+        dwell: 0,
+        maxPoints: 640,
+        savedCount: 0,
+      };
+
+      const autoTraceSystem = {
+        delay: 0,
+        initialDelay: 1200,
+        timer: null,
+        nextStartAt: 0,
+        running: false,
+      };
+
+      function scheduleAutoTrace(delay = autoTraceSystem.delay) {
+        if (autoTraceSystem.timer) {
+          clearTimeout(autoTraceSystem.timer);
+        }
+        autoTraceSystem.nextStartAt = performance.now() + delay;
+        autoTraceSystem.timer = setTimeout(() => {
+          autoTraceSystem.timer = null;
+          autoTraceSystem.nextStartAt = 0;
+          startTraceSession();
+        }, delay);
+      }
+
+      function makeTraceMaterial(opacity = 0.72) {
+        return new THREE.LineBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity,
+          depthWrite: false,
+          depthTest: false,
+          fog: false,
+          blending: THREE.AdditiveBlending,
+        });
+      }
+
+      function setStoredTraceOpacity(opacity) {
+        for (const trace of traceSystem.traces) {
+          trace.line.material.opacity = opacity;
+          trace.points.material.opacity = opacity * 0.62;
+          for (const link of trace.links) link.material.opacity = Math.max(0.12, opacity * 0.9);
+        }
+      }
+
+      function beginTraceRecording(now) {
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(traceSystem.maxPoints * 3);
+        geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+        geometry.setDrawRange(0, 0);
+
+        const line = new THREE.Line(geometry, makeTraceMaterial(0.92));
+        line.frustumCulled = false;
+        rootGroup.add(line);
+
+        const pointGeometry = new THREE.BufferGeometry();
+        const pointPositions = new Float32Array(traceSystem.maxPoints * 3);
+        pointGeometry.setAttribute("position", new THREE.BufferAttribute(pointPositions, 3));
+        pointGeometry.setDrawRange(0, 0);
+        const pointMaterial = new THREE.PointsMaterial({
+          color: 0xffffff,
+          size: 2.05,
+          transparent: true,
+          opacity: 0.86,
+          depthWrite: false,
+          depthTest: false,
+          fog: false,
+          map: textures.glow,
+          blending: THREE.AdditiveBlending,
+          alphaTest: 0.02,
+          sizeAttenuation: true,
+        });
+        const points = new THREE.Points(pointGeometry, pointMaterial);
+        points.frustumCulled = false;
+        rootGroup.add(points);
+
+        traceSystem.recording = true;
+        traceSystem.firstDetectionAt = now;
+        traceSystem.lastRecordAt = now;
+        traceSystem.dwell = 0;
+        traceSystem.current = {
+          id: traceSystem.savedCount + 1,
+          line,
+          points,
+          geometry,
+          positions,
+          pointGeometry,
+          pointPositions,
+          samples: [],
+          links: [],
+          signature: null,
+          startedAt: now,
+        };
+        setStoredTraceOpacity(0.12);
+        if (startHint) {
+          startHint.textContent = "";
+          startHint.classList.remove("is-visible");
+        }
+      }
+
+      function addRenderStyleTraceThreads(trace, point, index, movementIntensity) {
+        if (index < 4) return;
+        const makeThread = (fromIndex, opacity, lift = 0) => {
+          const from = trace.samples[fromIndex];
+          if (!from) return;
+          const mid = from.position.clone().lerp(point, 0.5);
+          mid.y += lift + (Math.random() - 0.5) * 10;
+          mid.z += 6 + Math.random() * 18;
+          const geometry = new THREE.BufferGeometry().setFromPoints([from.position, mid, point]);
+          const link = new THREE.Line(geometry, makeTraceMaterial(opacity));
+          link.frustumCulled = false;
+          link.renderOrder = 62;
+          rootGroup.add(link);
+          trace.links.push(link);
+        };
+
+        if (index % 2 === 0) makeThread(Math.max(0, index - 3 - Math.floor(Math.random() * 5)), 0.22 + movementIntensity * 0.16, 8);
+        if (index % 5 === 0) makeThread(Math.max(0, index - 8 - Math.floor(Math.random() * 10)), 0.15 + movementIntensity * 0.12, -6);
+        if (index % 9 === 0 && trace.samples.length > 14) makeThread(Math.floor(Math.random() * (trace.samples.length - 2)), 0.11 + movementIntensity * 0.1, 14);
+      }
+
+      function recordTracePoint(nx, ny, travel, now) {
+        if (!traceSystem.recording) beginTraceRecording(now);
+        const trace = traceSystem.current;
+        if (!trace) return;
+
+        const dt = Math.max(16, now - traceSystem.lastRecordAt);
+        const normalized = new THREE.Vector2(nx, ny);
+        const normalizedTravel = normalized.distanceTo(traceSystem.lastNormalized);
+        if (normalizedTravel < 0.026) {
+          traceSystem.dwell += dt;
+        } else {
+          traceSystem.dwell = Math.max(0, traceSystem.dwell - dt * 0.7);
+        }
+        traceSystem.lastNormalized.copy(normalized);
+        traceSystem.lastRecordAt = now;
+
+        const point = smoothedPresence.clone();
+        const dwellDepth = clamp01(traceSystem.dwell / 3600);
+        point.z += dwellDepth * 215 + Math.sin(trace.samples.length * 0.22 + trace.id) * 9;
+        point.x += (nx - 0.5) * 36 + Math.sin(trace.samples.length * 0.41 + trace.id) * 7;
+        point.y += (0.5 - ny) * 58 + Math.cos(trace.samples.length * 0.33 + trace.id) * 12;
+
+        const last = trace.samples[trace.samples.length - 1];
+        if (last && last.position.distanceTo(point) < 2.1 && now - traceSystem.firstDetectionAt < traceSystem.maxDuration - 50) return;
+        if (trace.samples.length >= traceSystem.maxPoints) return;
+
+        const movementIntensity = clamp01(travel * 32);
+        trace.samples.push({ position: point, nx, ny, dwell: dwellDepth, movement: movementIntensity, time: now - traceSystem.firstDetectionAt });
+        const index = trace.samples.length - 1;
+        trace.positions[index * 3] = point.x;
+        trace.positions[index * 3 + 1] = point.y;
+        trace.positions[index * 3 + 2] = point.z;
+        trace.pointPositions[index * 3] = point.x;
+        trace.pointPositions[index * 3 + 1] = point.y;
+        trace.pointPositions[index * 3 + 2] = point.z;
+        trace.geometry.setDrawRange(0, trace.samples.length);
+        trace.pointGeometry.setDrawRange(0, trace.samples.length);
+        trace.geometry.attributes.position.needsUpdate = true;
+        trace.pointGeometry.attributes.position.needsUpdate = true;
+
+        addRenderStyleTraceThreads(trace, point, index, movementIntensity);
+        if (index % 2 === 0) {
+          const sparkle = point.clone();
+          sparkle.x += (Math.random() - 0.5) * 18;
+          sparkle.y += (Math.random() - 0.5) * 24;
+          sparkle.z += (Math.random() - 0.5) * 20;
+          memoryField.recordPresence(sparkle, 0.045 + movementIntensity * 0.08);
+        }
+
+        memoryField.recordPresence(point, 0.09 + movementIntensity * 0.16 + dwellDepth * 0.2);
+        motionState.disturbance = Math.max(motionState.disturbance, 0.08 + movementIntensity * 0.08);
+        motionState.disturbanceMemory = Math.max(motionState.disturbanceMemory, 0.055 + dwellDepth * 0.035);
+
+      }
+
+      function traceSignature(trace) {
+        if (!trace.samples.length) return { x: 0.5, y: 0.5, z: 0, spreadX: 0, spreadY: 0 };
+        let sx = 0, sy = 0, sz = 0, minX = 1, maxX = 0, minY = 1, maxY = 0;
+        for (const sample of trace.samples) {
+          sx += sample.nx;
+          sy += sample.ny;
+          sz += sample.dwell;
+          minX = Math.min(minX, sample.nx); maxX = Math.max(maxX, sample.nx);
+          minY = Math.min(minY, sample.ny); maxY = Math.max(maxY, sample.ny);
+        }
+        const n = trace.samples.length;
+        return { x: sx / n, y: sy / n, z: sz / n, spreadX: maxX - minX, spreadY: maxY - minY };
+      }
+
+      function signatureDistance(a, b) {
+        const dx = (a.x - b.x) * 1.25;
+        const dy = (a.y - b.y) * 1.25;
+        const dz = (a.z - b.z) * 1.8;
+        const dsx = (a.spreadX - b.spreadX) * 0.7;
+        const dsy = (a.spreadY - b.spreadY) * 0.7;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz + dsx * dsx + dsy * dsy);
+      }
+
+      function closestSampleToSignature(trace, signature) {
+        let best = trace.samples[0];
+        let bestScore = Infinity;
+        for (const sample of trace.samples) {
+          const score = Math.abs(sample.nx - signature.x) + Math.abs(sample.ny - signature.y) + Math.abs(sample.dwell - signature.z);
+          if (score < bestScore) { bestScore = score; best = sample; }
+        }
+        return best || { position: new THREE.Vector3() };
+      }
+
+      function createSimilarityNode(traceA, traceB, similarity) {
+        const sampleA = closestSampleToSignature(traceA, traceB.signature || traceSignature(traceB));
+        const sampleB = closestSampleToSignature(traceB, traceA.signature || traceSignature(traceA));
+        const position = sampleA.position.clone().lerp(sampleB.position, 0.5);
+        position.z += 8 + similarity * 26;
+
+        const node = new Node3D(nodes.length, position, textures);
+        node.memory = 0.52 + similarity * 0.42;
+        node.energy = 0.42 + similarity * 0.48;
+        node.affinity = similarity;
+        nodes.push(node);
+        nodeMaterialGroup.add(node.group);
+        memoryField.recordPresence(position, 0.36 + similarity * 0.35);
+
+        const linkGeometry = new THREE.BufferGeometry().setFromPoints([sampleA.position, position, sampleB.position]);
+        const link = new THREE.Line(linkGeometry, makeTraceMaterial(0.42 + similarity * 0.28));
+        link.frustumCulled = false;
+        link.renderOrder = 58;
+        rootGroup.add(link);
+        traceA.links.push(link);
+        traceB.links.push(link);
+      }
+
+      function connectSimilarTraces(newTrace) {
+        let created = 0;
+        for (const trace of traceSystem.traces) {
+          const distance = signatureDistance(newTrace.signature, trace.signature);
+          if (distance < 0.34) {
+            createSimilarityNode(newTrace, trace, 1 - distance / 0.34);
+            created++;
+          }
+          if (created >= 3) break;
+        }
+      }
+
+      function finishTraceRecording() {
+        const trace = traceSystem.current;
+        if (!trace) return;
+        traceSystem.recording = false;
+        traceSystem.current = null;
+        traceSystem.enabled = false;
+        trace.signature = traceSignature(trace);
+
+        if (trace.samples.length > 2) {
+          connectSimilarTraces(trace);
+          traceSystem.traces.push(trace);
+          traceSystem.savedCount++;
+          trace.line.material.opacity = 0.34;
+          trace.points.material.opacity = 0.22;
+          if (startHint) {
+            startHint.textContent = "nessuna traccia rilevata";
+            startHint.classList.add("is-visible");
+          }
+        } else {
+          rootGroup.remove(trace.line);
+          rootGroup.remove(trace.points);
+          if (startHint) {
+            startHint.textContent = "nessuna traccia rilevata";
+            startHint.classList.add("is-visible");
+          }
+        }
+
+        setStoredTraceOpacity(0.24);
+        controls.autoRotate = true;
+        setHandOverlayVisible(false);
+        traceSystem.enabled = true;
+      }
+
+      function cancelEmptyTraceSession(message = "traccia interrotta") {
+        traceSystem.enabled = false;
+        traceSystem.recording = false;
+        traceSystem.current = null;
+        setStoredTraceOpacity(0.24);
+        if (startHint) {
+          startHint.textContent = "nessuna traccia rilevata";
+          startHint.classList.add("is-visible");
+        }
+        controls.autoRotate = true;
+        setHandOverlayVisible(false);
+        traceSystem.enabled = true;
+      }
+
+      function stopWebcamTracking() {
+        webcamTracking.active = false;
+        webcamTracking.source = "saved";
+        webcamTracking.hands = 0;
+        webcamTracking.faces = 0;
+        if (webcamTracking.stream) {
+          for (const track of webcamTracking.stream.getTracks()) track.stop();
+        }
+        webcamTracking.stream = null;
+        if (webcamVideo) webcamVideo.srcObject = null;
+        setHandOverlayVisible(false);
+      }
+
+      const nodeMaterialGroup = new THREE.Group();
+      scene.add(nodeMaterialGroup);
+
+      function randomInVolume(radiusX, radiusY, radiusZ) {
+        const u = Math.random() * 2 - 1;
+        const v = Math.random() * 2 - 1;
+        const w = Math.random() * 2 - 1;
+        return new THREE.Vector3(u * radiusX, v * radiusY, w * radiusZ);
+      }
+
+      function buildNodes() {
+        for (let i = 0; i < settings.nodeCount; i++) {
+          const basePosition = randomInVolume(210, 180, 210);
+          basePosition.y += Math.sin(basePosition.x * 0.02) * 22 - Math.abs(basePosition.y) * 0.025;
+          basePosition.z += Math.cos(basePosition.x * 0.015) * 12;
+          const node = new Node3D(i, basePosition, textures);
+          nodes.push(node);
+          nodeMaterialGroup.add(node.group);
+        }
+      }
+
+      function connectionKey(nodeA, nodeB) {
+        return nodeA.index < nodeB.index
+          ? `${nodeA.index}-${nodeB.index}`
+          : `${nodeB.index}-${nodeA.index}`;
+      }
+
+      function addConnectionBundle(nodeA, nodeB, bundleCount = settings.bundleCount) {
+        const key = connectionKey(nodeA, nodeB);
+        if (connectionPairs.has(key)) {
+          return false;
+        }
+
+        connectionPairs.add(key);
+        for (let bundle = 0; bundle < bundleCount; bundle++) {
+          const connection = new Connection3D(nodeA, nodeB, bundle, bundleCount);
+          connections.push(connection);
+          rootGroup.add(connection.line);
+        }
+
+        return true;
+      }
+
+      function connectNodes() {
+        for (let i = 0; i < nodes.length; i++) {
+          const ranked = [];
+          for (let j = 0; j < nodes.length; j++) {
+            if (i === j) continue;
+            const nodeA = nodes[i];
+            const nodeB = nodes[j];
+            const distance = nodeA.position.distanceTo(nodeB.position);
+            const memoryAffinity = (nodeA.memory + nodeB.memory) * 0.5 + Math.abs(nodeA.affinity - nodeB.affinity) * 0.12;
+            const proximity = clamp01(1 - distance / settings.connectionDistance);
+            const score = proximity * 0.76 + memoryAffinity * 0.58;
+            ranked.push({ nodeA, nodeB, distance, score });
+          }
+          ranked.sort((left, right) => right.score - left.score);
+          let linked = 0;
+          for (const candidate of ranked) {
+            if (linked >= settings.connectionLimit) break;
+            if (candidate.distance > settings.connectionDistance || candidate.score < 0.42) continue;
+            if (addConnectionBundle(candidate.nodeA, candidate.nodeB)) {
+              linked++;
+            }
+          }
+        }
+      }
+
+      function evolveMemoryConnections(time) {
+        if (time - lastMemoryEvolveAt < 1.8) {
+          return;
+        }
+
+        lastMemoryEvolveAt = time;
+        const hotspots = memoryField.getHotspots(6, 1.5);
+        let created = 0;
+
+        for (const hotspot of hotspots) {
+          const world = memoryField.cellToWorld(hotspot.x, hotspot.y, hotspot.z);
+          let closestA = null;
+          let closestB = null;
+          let closestDistanceA = Infinity;
+          let closestDistanceB = Infinity;
+
+          for (const node of nodes) {
+            const distance = node.position.distanceTo(world);
+            if (distance < closestDistanceA) {
+              closestB = closestA;
+              closestDistanceB = closestDistanceA;
+              closestA = node;
+              closestDistanceA = distance;
+            } else if (distance < closestDistanceB) {
+              closestB = node;
+              closestDistanceB = distance;
+            }
+          }
+
+          if (!closestA || !closestB) {
+            continue;
+          }
+
+          const pairKey = connectionKey(closestA, closestB);
+          const existing = connections.filter((connection) => connection.key === pairKey);
+          if (existing.length > 0) {
+            for (const connection of existing) {
+              connection.markActivation(0.12 + hotspot.value * 0.04);
+            }
+            continue;
+          }
+
+          if (closestA.position.distanceTo(closestB.position) < settings.connectionDistance * 1.25) {
+            if (addConnectionBundle(closestA, closestB, 1)) {
+              created++;
+              memoryField.recordPresence(world, 0.15 + hotspot.value * 0.08);
+            }
+          }
+
+          if (created >= 2) {
+            break;
+          }
+        }
+      }
+
+      function createParticleField() {
+        const count = settings.particleCount;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const seeds = new Float32Array(count * 3);
+        for (let i = 0; i < count; i++) {
+          const p = randomInVolume(360, 260, 360);
+          positions[i * 3] = p.x;
+          positions[i * 3 + 1] = p.y;
+          positions[i * 3 + 2] = p.z;
+          seeds[i * 3] = Math.random() * 1000;
+          seeds[i * 3 + 1] = Math.random() * 1000;
+          seeds[i * 3 + 2] = Math.random() * 1000;
+        }
+        geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute("seed", new THREE.BufferAttribute(seeds, 3));
+        const material = new THREE.PointsMaterial({
+          color: 0xffffff,
+          size: 1.15,
+          transparent: true,
+          opacity: 0.72,
+          depthWrite: false,
+          map: textures.glow,
+          blending: THREE.AdditiveBlending,
+          alphaTest: 0.02,
+          sizeAttenuation: true,
+        });
+        const points = new THREE.Points(geometry, material);
+        points.frustumCulled = false;
+        scene.add(points);
+        return { points, positions, seeds };
+      }
+
+      function createTerrainField() {
+        const count = settings.terrainDensity;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const seeds = new Float32Array(count * 3);
+        for (let i = 0; i < count; i++) {
+          const x = THREE.MathUtils.randFloatSpread(760);
+          const z = THREE.MathUtils.randFloatSpread(760);
+          const mound = Math.exp(-(x * x + z * z) / (2 * 170 * 170));
+          const ripple = Math.sin(x * 0.018) * Math.cos(z * 0.016);
+          positions[i * 3] = x;
+          positions[i * 3 + 1] = -172 + mound * settings.terrainAmplitude + ripple * 2.1 + Math.random() * 0.8;
+          positions[i * 3 + 2] = z;
+          seeds[i * 3] = Math.random() * 900;
+          seeds[i * 3 + 1] = Math.random() * 900;
+          seeds[i * 3 + 2] = Math.random() * 900;
+        }
+        geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute("seed", new THREE.BufferAttribute(seeds, 3));
+        const material = new THREE.PointsMaterial({
+          color: 0xffffff,
+          size: 1.05,
+          transparent: true,
+          opacity: 0.72,
+          depthWrite: false,
+          map: textures.glow,
+          blending: THREE.AdditiveBlending,
+          alphaTest: 0.02,
+          sizeAttenuation: true,
+        });
+        const points = new THREE.Points(geometry, material);
+        points.frustumCulled = false;
+        scene.add(points);
+        return { points, positions, seeds };
+      }
+
+      function createGlowingBackdrop() {
+        const geometry = new THREE.SphereGeometry(980, 32, 24);
+        const material = new THREE.MeshBasicMaterial({
+          color: 0x050505,
+          side: THREE.BackSide,
+          transparent: true,
+          opacity: 1,
+        });
+        const shell = new THREE.Mesh(geometry, material);
+        scene.add(shell);
+        return shell;
+      }
+
+      // Initial geometric plasma shards removed: the system starts clean and connections appear only from interaction.
+      const particleField = createParticleField();
+      const terrainField = createTerrainField();
+      const backdrop = createGlowingBackdrop();
+
+      controls.autoRotateSpeed = settings.autoOrbit;
+
+      const motionState = {
+        speed: 0,
+        targetSpeed: 0,
+        disturbance: 0,
+        disturbanceMemory: 0,
+        idleTime: 0,
+        lastMoveAt: performance.now(),
+        isInside: false,
+      };
+
+      let hasInitializedPointer = false;
+
+      function updatePointer(event) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
+        motionState.isInside = true;
+        motionState.lastMoveAt = performance.now();
+        hasInitializedPointer = true;
+      }
+
+      function applyTrackedPresence(normalizedX, normalizedY, speedScale = 1) {
+        const nx = clamp01(normalizedX);
+        const ny = clamp01(normalizedY);
+        const rect = renderer.domElement.getBoundingClientRect();
+        const previous = mouse.clone();
+
+        updatePointer({
+          clientX: rect.left + nx * rect.width,
+          clientY: rect.top + ny * rect.height,
+        });
+
+        const currentSpeed = previous.distanceTo(mouse) * 120 * speedScale;
+        motionState.targetSpeed = Math.max(motionState.targetSpeed, currentSpeed);
+        calculatePresencePoint();
+
+        const movementDisturbance = clamp01(currentSpeed / 42);
+        const localMemory = clamp01(memoryField.sample(smoothedPresence) * 0.08);
+        const disturbanceGain = movementDisturbance * (0.08 + localMemory * 0.22);
+        motionState.disturbance = clamp01(Math.max(motionState.disturbance, motionState.disturbanceMemory) + disturbanceGain);
+        motionState.disturbanceMemory = Math.max(motionState.disturbanceMemory, motionState.disturbance);
+        if (traceSystem.recording) {
+          memoryField.recordPresence(smoothedPresence, 0.025 + movementDisturbance * 0.04 + localMemory * 0.04);
+        }
+      }
+
+      function calculatePresencePoint() {
+        raycaster.setFromCamera(mouse, camera);
+        const hit = raycaster.ray.intersectPlane(presencePlane, presencePoint);
+        if (!hit) {
+          presencePoint.set(0, 0, 0);
+        }
+        presencePoint.z += Math.sin(mouse.x * 1.7) * 78 + Math.cos(mouse.y * 1.3) * 42;
+        smoothedPresence.lerp(presencePoint, 0.06);
+      }
+
+      function maybeCreatePulse(connection, speedFactor) {
+        if (pulseLimiter.clock > 0) {
+          pulseLimiter.clock -= 1;
+          return;
+        }
+        if (Math.random() < settings.pulseRate * 0.012 * speedFactor) {
+          const pulse = new Pulse3D(connection, soundEngine);
+          scene.add(pulse.mesh);
+          pulses.push(pulse);
+          connection.markActivation(0.08 + speedFactor * 0.02);
+          pulseLimiter.clock = 4 + Math.floor(Math.random() * 6);
+        }
+      }
+
+      function updateParticleField(time, motionSpeed) {
+        const positions = particleField.points.geometry.attributes.position.array;
+        const seeds = particleField.points.geometry.attributes.seed.array;
+        for (let i = 0; i < positions.length / 3; i++) {
+          const seed = seeds[i * 3];
+          const x = positions[i * 3];
+          const z = positions[i * 3 + 2];
+          const wave = layeredNoise(x * 0.01, z * 0.01, seed * 0.01, time * 0.2);
+          const sparkle = Math.sin(time * 9.0 + seed * 0.037) * Math.sin(time * 4.7 + seed * 0.021);
+          positions[i * 3 + 1] += Math.sin(time * 1.4 + seed * 0.01) * 0.018 + (wave - 0.5) * 0.018;
+          positions[i * 3] += Math.cos(time * 0.55 + seed * 0.02) * (0.003 + motionSpeed * 0.006);
+          positions[i * 3 + 2] += Math.sin(time * 0.48 + seed * 0.018) * (0.003 + motionSpeed * 0.006);
+          if (motionSpeed > 0.08) {
+            positions[i * 3 + 1] += motionSpeed * 0.028 + sparkle * motionSpeed * 0.012;
+          }
+          if (positions[i * 3 + 1] > 280) positions[i * 3 + 1] = -260 + Math.random() * 30;
+        }
+        particleField.points.geometry.attributes.position.needsUpdate = true;
+      }
+
+      function updateTerrainField(time, memoryDensity, disturbance) {
+        const positions = terrainField.points.geometry.attributes.position.array;
+        const seeds = terrainField.points.geometry.attributes.seed.array;
+        for (let i = 0; i < positions.length / 3; i++) {
+          const x = positions[i * 3];
+          const z = positions[i * 3 + 2];
+          const seed = seeds[i * 3];
+          const mound = Math.exp(-(x * x + z * z) / (2 * 160 * 160));
+          const wave = Math.sin(time * 0.8 + seed * 0.01 + x * 0.01) * 0.55 + Math.cos(time * 0.74 + z * 0.01) * 0.55;
+          positions[i * 3 + 1] = -172 + mound * (settings.terrainAmplitude + memoryDensity * 18 + disturbance * 14) + wave * (1.4 + disturbance * 0.6);
+        }
+        terrainField.points.geometry.attributes.position.needsUpdate = true;
+      }
+
+      function keepSystemVisibleFromDistance() {
+        const distance = camera.position.distanceTo(controls.target);
+        const visibilityScale = THREE.MathUtils.clamp(distance / 285, 1, 4.2);
+        rootGroup.scale.setScalar(visibilityScale);
+        nodeMaterialGroup.scale.setScalar(visibilityScale);
+      }
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const dt = Math.min(clock.getDelta(), 0.05);
+        const time = clock.elapsedTime;
+
+        motionState.idleTime = (performance.now() - motionState.lastMoveAt) / 1000;
+        motionState.speed = THREE.MathUtils.lerp(motionState.speed, motionState.targetSpeed, 0.12);
+        motionState.targetSpeed *= 0.92;
+
+        const memoryFloor = clamp01(memoryField.globalDensity * 0.08);
+        motionState.disturbanceMemory = Math.max(motionState.disturbanceMemory, memoryFloor);
+        motionState.disturbance = Math.max(motionState.disturbance, motionState.disturbanceMemory);
+
+        calculatePresencePoint();
+
+        if (hasInitializedPointer) {
+          const openBoost = clamp01(1 - motionState.disturbance * 0.85);
+          settings.networkOpen = THREE.MathUtils.lerp(settings.networkOpen, openBoost, 0.03);
+          settings.glowBoost = THREE.MathUtils.lerp(settings.glowBoost, 0.72 + motionState.disturbance * 1.25, 0.03);
+        }
+
+        memoryField.update(dt);
+        evolveMemoryConnections(time);
+        updateParticleField(time, motionState.disturbance);
+        updateTerrainField(time, memoryField.globalDensity, motionState.disturbance);
+
+        for (const node of nodes) {
+          node.update(dt, smoothedPresence, motionState, memoryField, time);
+        }
+
+        for (const connection of connections) {
+          connection.update(time, motionState, memoryField, smoothedPresence);
+          if (connection.baseStrength > 0.46 && motionState.disturbance > 0.08) {
+            maybeCreatePulse(connection, 0.75 + connection.baseStrength * 0.8);
+          }
+        }
+
+        for (let i = pulses.length - 1; i >= 0; i--) {
+          const finished = pulses[i].update(dt, time);
+          scene.add(pulses[i].mesh);
+          if (finished) {
+            pulses[i].connection.markActivation(0.18 + pulses[i].connection.baseStrength * 0.12);
+            scene.remove(pulses[i].mesh);
+            pulses.splice(i, 1);
+          }
+        }
+
+        while (pulses.length > 48) {
+          const pulse = pulses.shift();
+          scene.remove(pulse.mesh);
+        }
+
+        const memoryDensity = memoryField.globalDensity;
+        soundEngine.update(motionState, memoryDensity, dt);
+        controls.update();
+        keepSystemVisibleFromDistance();
+
+        backdrop.material.opacity = 0.98;
+        rootGroup.rotation.y = Math.sin(time * 0.05) * 0.02;
+        rootGroup.rotation.x = Math.cos(time * 0.04) * 0.01;
+        nodeMaterialGroup.rotation.y = Math.sin(time * 0.025) * 0.008;
+
+
+        renderer.render(scene, camera);
+      }
+
+      function onPointerMove(event) {
+        if (!allowMouseFallback || webcamTracking.active) {
+          return;
+        }
+        const rect = renderer.domElement.getBoundingClientRect();
+        const nx = (event.clientX - rect.left) / rect.width;
+        const ny = (event.clientY - rect.top) / rect.height;
+        applyTrackedPresence(nx, ny, 1);
+      }
+
+      async function ensureWebcamDetectors() {
+        const now = performance.now();
+        if (now - webcamTracking.lastEnsureAt < 900) {
+          return;
+        }
+        webcamTracking.lastEnsureAt = now;
+
+        if (!window.handPoseDetection && !window.faceLandmarksDetection) {
+          webcamTracking.lastError = "ml globals missing";
+          return;
+        }
+
+        let handDetector = webcamTracking.handDetector || (window.__ml_hand && window.__ml_hand.detectorRef ? window.__ml_hand.detectorRef() : null);
+        let faceDetector = webcamTracking.faceDetector || (window.__ml_face && window.__ml_face.detectorRef ? window.__ml_face.detectorRef() : null);
+
+        if (!handDetector && window.handPoseDetection && window.handPoseDetection.createDetector) {
+          handDetector = await window.handPoseDetection.createDetector(
+            window.handPoseDetection.SupportedModels.MediaPipeHands,
+            { runtime: "mediapipe", solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/hands", modelType: "full", maxHands: 4, minDetectionConfidence: 0.25, minTrackingConfidence: 0.25 }
+          );
+        }
+
+        if (!faceDetector && window.faceLandmarksDetection && window.faceLandmarksDetection.createDetector) {
+          faceDetector = await window.faceLandmarksDetection.createDetector(
+            window.faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh,
+            { runtime: "mediapipe", solutionPath: "https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh", refineLandmarks: true, maxFaces: 1 }
+          );
+        }
+
+        webcamTracking.handDetector = handDetector || null;
+        webcamTracking.faceDetector = faceDetector || null;
+        webcamTracking.handReady = !!webcamTracking.handDetector;
+        webcamTracking.faceReady = !!webcamTracking.faceDetector;
+      }
+
+      async function trackFromWebcam() {
+        if (!webcamTracking.active || !webcamVideo) {
+          return;
+        }
+
+        if (webcamVideo.readyState < 2 || !webcamVideo.videoWidth || !webcamVideo.videoHeight) {
+          webcamTracking.source = "video";
+          requestAnimationFrame(trackFromWebcam);
+          return;
+        }
+
+        const now = performance.now();
+        if (now - webcamTracking.lastInferenceAt < 32) {
+          requestAnimationFrame(trackFromWebcam);
+          return;
+        }
+        webcamTracking.lastInferenceAt = now;
+
+        if (!webcamTracking.handDetector && !webcamTracking.faceDetector) {
+          try {
+            await ensureWebcamDetectors();
+          } catch (detectorError) {
+            console.error("Detector ensure failed", detectorError);
+          }
+        }
+
+        const handDetector = webcamTracking.handDetector || (window.__ml_hand && window.__ml_hand.detectorRef ? window.__ml_hand.detectorRef() : null);
+        const faceDetector = webcamTracking.faceDetector || (window.__ml_face && window.__ml_face.detectorRef ? window.__ml_face.detectorRef() : null);
+        webcamTracking.handReady = !!handDetector;
+        webcamTracking.faceReady = !!faceDetector;
+
+        if (!handDetector && !faceDetector) {
+          webcamTracking.source = "model";
+          requestAnimationFrame(trackFromWebcam);
+          return;
+        }
+
+        try {
+          // Keep the GLSL night-vision shader active for the webcam layer,
+          // but use the original camera stream for ML detection.
+          // The high-contrast shader can hide skin/keypoint details and make MediaPipe lose the hand.
+          nightVisionProcessor.render(webcamVideo);
+          let [hands, faces] = await Promise.all([
+            handDetector ? handDetector.estimateHands(webcamVideo, { flipHorizontal: true }) : Promise.resolve([]),
+            faceDetector ? faceDetector.estimateFaces(webcamVideo, { flipHorizontal: true }) : Promise.resolve([]),
+          ]);
+
+          // Night vision remains active as a GLSL webcam layer, but detection stays on the raw camera.
+          // This avoids false traces from the bright/flickering plasma sphere.
+
+          drawHandOverlay(hands);
+          if (!webcamTracking.motionFallback) webcamTracking.motionFallback = new MotionHandFallback();
+          const motionHand = webcamTracking.motionFallback.detect(webcamVideo, now); // filtered anti-plasma fallback
+
+          const handCount = hands ? hands.length : 0;
+          const faceCount = faces ? faces.length : 0;
+          webcamTracking.hands = handCount;
+          webcamTracking.faces = faceCount;
+
+          if (hands && hands.length > 0) {
+            webcamTracking.source = "hand";
+            webcamTracking.lastSeenAt = now;
+            const hand = hands[0];
+            const videoWidth = webcamVideo.videoWidth || 1;
+            const videoHeight = webcamVideo.videoHeight || 1;
+            const keypoint = getHandTrackingPoint(hand, videoWidth, videoHeight);
+
+            if (keypoint && videoWidth > 1 && videoHeight > 1) {
+              const nx = clamp01(1 - keypoint.x / videoWidth);
+              const ny = clamp01(keypoint.y / videoHeight);
+              const dx = nx - webcamTracking.lastX;
+              const dy = ny - webcamTracking.lastY;
+              const travel = Math.sqrt(dx * dx + dy * dy);
+              const speedScale = 2.2 + clamp01(travel * 80) * 8;
+
+              applyTrackedPresence(nx, ny, speedScale);
+              if (traceSystem.enabled) {
+                recordTracePoint(nx, ny, travel, now);
+              }
+              if (startHint) startHint.classList.remove("is-visible");
+
+              motionState.disturbance = Math.max(motionState.disturbance, 0.12);
+              motionState.disturbanceMemory = Math.max(motionState.disturbanceMemory, 0.08);
+
+              webcamTracking.lastX = nx;
+              webcamTracking.lastY = ny;
+            }
+          } else if (motionHand) {
+            // Il fallback di movimento resta disponibile solo come informazione tecnica,
+            // ma NON può più disegnare: così la luce/flicker della sfera al plasma
+            // non genera tracce. La traccia viene creata soltanto dal canvas della mano.
+            webcamTracking.source = "motion-ignored";
+            if (traceSystem.recording) finishTraceRecording();
+            if (startHint) {
+              startHint.textContent = "nessuna traccia rilevata";
+              startHint.classList.add("is-visible");
+            }
+          } else if (faces && faces.length > 0) {
+            if (traceSystem.recording) finishTraceRecording();
+            if (startHint) {
+              startHint.textContent = "nessuna traccia rilevata";
+              startHint.classList.add("is-visible");
+            }
+            webcamTracking.source = "face";
+            webcamTracking.lastSeenAt = now;
+            const face = faces[0];
+            const faceKeypoint = (face.keypoints && face.keypoints[1]) || (face.keypoints && face.keypoints[0]);
+            const videoWidth = webcamVideo.videoWidth || 1;
+            const videoHeight = webcamVideo.videoHeight || 1;
+
+            if (faceKeypoint && videoWidth > 1 && videoHeight > 1) {
+              const nx = clamp01(1 - faceKeypoint.x / videoWidth);
+              const ny = clamp01(faceKeypoint.y / videoHeight);
+
+              applyTrackedPresence(nx, ny, 1.4);
+
+              motionState.disturbance = Math.max(motionState.disturbance, 0.08);
+              motionState.disturbanceMemory = Math.max(motionState.disturbanceMemory, 0.06);
+              webcamTracking.lastX = nx;
+              webcamTracking.lastY = ny;
+            }
+          } else {
+            webcamTracking.source = "none";
+            if (traceSystem.recording) finishTraceRecording();
+            if (startHint) {
+              startHint.textContent = "nessuna traccia rilevata";
+              startHint.classList.add("is-visible");
+            }
+            if (now - webcamTracking.lastSeenAt > 600) {
+              motionState.disturbance = Math.max(motionState.disturbance, 0.04);
+              motionState.disturbanceMemory = Math.max(motionState.disturbanceMemory, 0.03);
+            }
+          }
+        } catch (error) {
+          console.error("Webcam tracking loop error", error);
+        }
+
+
+        requestAnimationFrame(trackFromWebcam);
+      }
+
+      async function initWebcamTracking() {
+        if (webcamTracking.active) {
+          return;
+        }
+        if (!webcamVideo) {
+          if (startHint) {
+            startHint.textContent = "nessuna traccia rilevata";
+            startHint.classList.add("is-visible");
+          }
+          return;
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          if (startHint) {
+            startHint.textContent = "nessuna traccia rilevata";
+            startHint.classList.add("is-visible");
+          }
+          return;
+        }
+
+        try {
+          webcamTracking.initState = "cam";
+          if (startHint) startHint.textContent = "nessuna traccia rilevata";
+          webcamTracking.stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 60 } },
+            audio: false,
+          });
+
+          webcamVideo.srcObject = webcamTracking.stream;
+          await webcamVideo.play();
+          if (webcamVideo.readyState < 2) {
+            await new Promise((resolve) => {
+              const onLoaded = () => {
+                webcamVideo.removeEventListener("loadeddata", onLoaded);
+                resolve();
+              };
+              webcamVideo.addEventListener("loadeddata", onLoaded, { once: true });
+            });
+          }
+
+          webcamTracking.active = true;
+          webcamTracking.source = "boot";
+          webcamTracking.lastInferenceAt = performance.now();
+          webcamTracking.lastSeenAt = performance.now();
+          webcamTracking.hands = 0;
+          webcamTracking.faces = 0;
+          webcamTracking.lastError = "";
+          allowMouseFallback = false;
+          trackFromWebcam();
+
+          webcamTracking.initState = "model";
+          if (startHint) startHint.textContent = "nessuna traccia rilevata";
+
+          const modelLoads = [];
+          if (window.__ml_hand && window.__ml_hand.loadModel) {
+            modelLoads.push(window.__ml_hand.loadModel());
+          }
+          if (window.__ml_face && window.__ml_face.loadModel) {
+            modelLoads.push(window.__ml_face.loadModel());
+          }
+          if (modelLoads.length > 0) {
+            await Promise.allSettled(modelLoads);
+          }
+
+          webcamTracking.initState = "ensure";
+          try {
+            await ensureWebcamDetectors();
+          } catch (ensureErr) {
+            console.error("Detector ensure failed during init", ensureErr);
+            webcamTracking.lastError = ensureErr && ensureErr.message ? ensureErr.message : String(ensureErr);
+          }
+
+          webcamTracking.source = webcamTracking.handReady || webcamTracking.faceReady ? "ready" : "model";
+          webcamTracking.handReady = !!webcamTracking.handDetector;
+          webcamTracking.faceReady = !!webcamTracking.faceDetector;
+          webcamTracking.initState = "live";
+          if (startHint) {
+            startHint.textContent = "nessuna traccia rilevata";
+          }
+        } catch (error) {
+          console.error("Webcam init failed", error);
+          webcamTracking.active = false;
+          webcamTracking.source = "error";
+          webcamTracking.initState = "error";
+          webcamTracking.lastError = error && error.message ? error.message : String(error);
+          allowMouseFallback = true;
+          if (startHint) {
+            startHint.textContent = "nessuna traccia rilevata";
+            startHint.classList.add("is-visible");
+          }
+        }
+      }
+
+      async function startTraceSession() {
+        if (traceSystem.enabled || traceSystem.recording || autoTraceSystem.running) {
+          return;
+        }
+        autoTraceSystem.running = true;
+        if (autoTraceSystem.timer) {
+          clearTimeout(autoTraceSystem.timer);
+          autoTraceSystem.timer = null;
+        }
+        autoTraceSystem.nextStartAt = 0;
+        traceSystem.enabled = true;
+        traceSystem.recording = false;
+        traceSystem.current = null;
+        traceSystem.sessionStartedAt = performance.now();
+        traceSystem.dwell = 0;
+        traceSystem.lastNormalized.set(webcamTracking.lastX, webcamTracking.lastY);
+        allowMouseFallback = false;
+        controls.autoRotate = true;
+        setHandOverlayVisible(false);
+        if (startHint) {
+          startHint.style.display = "block";
+          startHint.textContent = "nessuna traccia rilevata";
+          startHint.classList.add("is-visible");
+        }
+        try { await soundEngine.start(); } catch (error) { console.warn("Audio start failed", error); }
+        if (!webcamTracking.active) {
+          await initWebcamTracking();
+        }
+        autoTraceSystem.running = false;
+        if (!webcamTracking.active && !traceSystem.recording) {
+          cancelEmptyTraceSession("webcam non disponibile");
+        } else if (startHint) {
+          startHint.textContent = "nessuna traccia rilevata";
+        }
+      }
+
+      function onPointerDown() {
+        soundEngine.start();
+      }
+
+      window.addEventListener("pointermove", onPointerMove, { passive: true });
+      window.addEventListener("pointerdown", onPointerDown, { passive: true, once: true });
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      });
+
+      // La webcam resta sempre attiva: ogni movimento di mano registra una traccia, la scomparsa della mano la salva.
+      initWebcamTracking().finally(() => {
+        startTraceSession();
+      });
+
+      // Seed the presence position near the center without creating an initial network.
+      mouse.set(0, 0);
+      calculatePresencePoint();
+      smoothedPresence.copy(presencePoint);
+      motionState.targetSpeed = 0;
+
+      window.addEventListener("beforeunload", () => {
+        if (webcamTracking.stream) {
+          for (const track of webcamTracking.stream.getTracks()) {
+            track.stop();
+          }
+        }
+      });
+
+      animate();
+    </script>
+  </body>
+</html>
