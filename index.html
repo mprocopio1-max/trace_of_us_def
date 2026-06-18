@@ -334,7 +334,7 @@
   <body>
     <div id="ui">
       <div class="hud">
-        <img class="app-logo" src="./assets/traces-logo.png" alt="TRACES OF US" />
+        <img class="app-logo" src="./assets/images/traces-logo.png" alt="TRACES OF US" />
         <div class="title">Traces of Us</div>
         <div class="description">Una rete latente registra presenze invisibili.</div>
         <div class="meta">La mano disegna una traccia; la permanenza diventa profondità.</div>
@@ -366,8 +366,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection"></script>
-    <script src="./ml-face-tracking.js"></script>
-    <script src="./ml-hand-tracking.js"></script>
+    <script src="./src/ml/ml-face-tracking.js"></script>
+    <script src="./src/ml/ml-hand-tracking.js"></script>
 
     <script type="module">
       import * as THREE from "three";
@@ -804,8 +804,10 @@
 
       function updateFullscreenButton() {
         if (!fullscreenButton) return;
-        fullscreenButton.textContent = document.fullscreenElement ? "exit fullscreen" : "fullscreen";
-        fullscreenButton.setAttribute("aria-label", document.fullscreenElement ? "Esci dal fullscreen" : "Attiva fullscreen");
+        const isFullscreen = !!document.fullscreenElement;
+        fullscreenButton.hidden = isFullscreen;
+        fullscreenButton.textContent = "fullscreen";
+        fullscreenButton.setAttribute("aria-label", "Attiva fullscreen");
       }
 
       async function toggleFullscreen() {

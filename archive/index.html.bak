@@ -297,14 +297,14 @@
   </head>
   <body>
     <div id="introOverlay" aria-label="intro">
-      <img class="intro-logo" src="./assets/traces-logo.png" alt="TRACES OF US" />
+      <img class="intro-logo" src="../assets/images/traces-logo.png" alt="TRACES OF US" />
       <div class="intro-line first">Ogni presenza lascia tracce invisibili.</div>
       <div class="intro-line second">Tu sei ciò che lasci nello spazio che abiti.</div>
     </div>
 
     <div id="ui">
       <div class="hud">
-        <img class="app-logo" src="./assets/traces-logo.png" alt="TRACES OF US" />
+        <img class="app-logo" src="../assets/images/traces-logo.png" alt="TRACES OF US" />
         <div class="title">Traces of Us</div>
         <div class="description">Una rete latente registra presenze invisibili.</div>
         <div class="meta">La mano disegna una traccia; la permanenza diventa profondità.</div>
@@ -346,8 +346,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/hand-pose-detection"></script>
-    <script src="./ml-face-tracking.js"></script>
-    <script src="./ml-hand-tracking.js"></script>
+    <script src="../src/ml/ml-face-tracking.js"></script>
+    <script src="../src/ml/ml-hand-tracking.js"></script>
 
     <script type="module">
       import * as THREE from "three";
