@@ -204,7 +204,7 @@ Visual parameters are continuously mapped to audio parameters:
 ## Experience
 
 1. A visitor approaches the installation.
-2. The plasma sphere makes an invisible field visible.
+2. Interacts with the plasma sphere.
 3. Hand movement generates a trace.
 4. The trace is archived when movement stops.
 5. The system compares the trace with previous ones.
@@ -416,7 +416,7 @@ I parametri visivi vengono tradotti continuamente in parametri sonori:
 ## Esperienza
 
 1. Una persona entra nello spazio.
-2. La sfera al plasma rende visibile un campo invisibile.
+2. Interagisce con la sfera al plasma.
 3. Il movimento genera una traccia.
 4. La traccia viene archiviata quando il movimento termina.
 5. Il sistema confronta la traccia con quelle precedenti.
